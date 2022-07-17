@@ -23,9 +23,9 @@ Path: `/login`
 Service: Auth
 Live example:
 ```shell
-curl -X POST http://localhost:4000/login -H 'Content-Type: application/json' -d '{"username":"hgmaxwellking@gmail.com","password":"Password123!"}'
+curl -X POST http://localhost:4000/login -H 'Content-Type: application/json' -d '{"username":"sabayone@gmail.com","password":"password"}'
 
-curl -X POST https://q0sku06vtg.execute-api.us-east-2.amazonaws.com/v1/auth/login -H 'Content-Type: application/json' -d '{"username":"hgmaxwellking@gmail.com","password":"Password123!"}'
+curl -X POST https://q0sku06vtg.execute-api.us-east-2.amazonaws.com/v1/auth/login -H 'Content-Type: application/json' -d '{"username":"sabayone@gmail.com","password":"password"}'
 ```
 ###### Verify
 Path: `/verify`
@@ -47,12 +47,12 @@ curl -X POST http://localhost:4000/resend-code -H 'Content-Type: application/jso
 curl -X POST https://q0sku06vtg.execute-api.us-east-2.amazonaws.com/v1/auth/resend-code -H 'Content-Type: application/json' -d '{"username":"hgmaxwellking@gmail.com"}'
 ```
 
-###### Get All Users
+###### Get All Emailers
 Path: `/users`
 Service: User
 Live example:
 ```shell
-curl https://q0sku06vtg.execute-api.us-east-2.amazonaws.com/v1/api/emailers -H 'Authorization: Bearer eyJraWQiOiJzUWpVT3MwQnBLTEtWYTVzS1pcL3REM1Q2VFA3OHliSGxxbFhEejA0Nnh5VT0iLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJjZTFkYmM0Zi0yY2M0LTQxYjAtODM1OC02OGJiOWVkNDlmNjYiLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiaXNzIjoiaHR0cHM6XC9cL2NvZ25pdG8taWRwLnVzLWVhc3QtMi5hbWF6b25hd3MuY29tXC91cy1lYXN0LTJfbm5kM2g1WjFaIiwiY29nbml0bzp1c2VybmFtZSI6ImhnbWF4d2VsbGtpbmdAZ21haWwuY29tIiwib3JpZ2luX2p0aSI6ImQ0MzBkNTI0LWNmNzktNDBjYy04Mjk5LTNkZjRhOGY5ZjAwMSIsImF1ZCI6IjcwYXBiYXZsMWZzb2JlZDRqdDdsN21sMThoIiwiZXZlbnRfaWQiOiI5OTRjZDFhMy02NmE0LTQ3YTMtOTBiNi1lZDIzMWI2M2I1ODgiLCJ0b2tlbl91c2UiOiJpZCIsImF1dGhfdGltZSI6MTY1Nzk3MTAxOCwiZXhwIjoxNjU3OTc0NjE4LCJpYXQiOjE2NTc5NzEwMTgsImp0aSI6IjY3YjhjNDhjLWM4MTQtNDc2Ny1iMDcyLWIwMzNhMTQ5NTJlMiIsImVtYWlsIjoiaGdtYXh3ZWxsa2luZ0BnbWFpbC5jb20ifQ.HJhXyqTXUB_V8mDAxDH_x48VqDG6ef7QC2v2HEepPiZx1UCzpK5bFdbeDt4rX4Scuwyah9g0Q4X8PvqmC7oTVA9RFiUo7pgZ2gc-vCYVCEFLO7UKXVjSwMOseIKH9HZnzsyJE-sagPMb0-vkxxW4RIitqddiIzkjqa-eqrqcKM3JLrgiUMac_SHAGyqrqTgs70xcQnFYrW9uugTd1FQ_eOYz_I5N2mmaDeAOveu0-vUfsnbMSa_Xe1-lDuG8Lu6iBts69T9bgfaqLm9XECsQSpJ4SB5RhalbzbaY8nKQu1WafBUT_vxIrI5QgfyQST7houh7LHKt6LhFmGL-fa7YlA'
+curl https://q0sku06vtg.execute-api.us-east-2.amazonaws.com/v1/api/emailers -H 'Authorization: Bearer [token]'
 ```
 
 ###### Insert New Emailer
@@ -60,9 +60,19 @@ Path: `/resend-code`
 Service: Auth
 Live example:
 ```shell
-curl -X POST http://localhost:4000/emailers -H 'Content-Type: application/json' -d '{"search_param":"astoria%20nyc","frequency":"daily"}' -H "Authorization: Bearer eyJraWQiOiJzUWpVT3MwQnBLTEtWYTVzS1pcL3REM1Q2VFA3OHliSGxxbFhEejA0Nnh5VT0iLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJjZTFkYmM0Zi0yY2M0LTQxYjAtODM1OC02OGJiOWVkNDlmNjYiLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiaXNzIjoiaHR0cHM6XC9cL2NvZ25pdG8taWRwLnVzLWVhc3QtMi5hbWF6b25hd3MuY29tXC91cy1lYXN0LTJfbm5kM2g1WjFaIiwiY29nbml0bzp1c2VybmFtZSI6ImhnbWF4d2VsbGtpbmdAZ21haWwuY29tIiwib3JpZ2luX2p0aSI6ImUxYTU1NjFlLTdhMjMtNGI5ZS1hNGI2LTkzMGRhOGUyMzExYiIsImF1ZCI6IjcwYXBiYXZsMWZzb2JlZDRqdDdsN21sMThoIiwiZXZlbnRfaWQiOiJlOGNjMzI0MS0zNWY3LTRjNTEtOWU5OC04MTIyZmZmOTRhZGYiLCJ0b2tlbl91c2UiOiJpZCIsImF1dGhfdGltZSI6MTY1ODAwNzg0NCwiZXhwIjoxNjU4MDExNDQ0LCJpYXQiOjE2NTgwMDc4NDQsImp0aSI6IjQ0NzE3OTcyLTY3NjQtNGZkZi1iYWY4LWJhNzZkN2I2MDNhMyIsImVtYWlsIjoiaGdtYXh3ZWxsa2luZ0BnbWFpbC5jb20ifQ.kzJbNEciNxkc1dNnZZltxOkftCdV_eBeF_E1trjcOQo-2S0DEX2PjqqLZ3QvBTAVNhde6X41cPhIASHCO0WFWEQLlTDcC1NKAExEI5THDrZ8NwmxNn3GTadJ4nAKSHwmNBHCRRrr_d3osktwvkd_Cp7nfwn9scmVJg6y2VScVY5bp0DlRHVtSl8E6685MIWk5jUr5P6JuoZAcA5kofrl4P3bGqnWDQLYf7e5qBtWT7DpY3VxK6HJmoDdu-60_GfxqQG50idJ3L5ABAnPwn1r4VbU-JEvEgfEvSxjVHhm_th2_EKxayQ8tT6gfAdaV1vu4zgQGHK_S0jklar170k71g"
+curl -X POST http://localhost:4000/emailers -H 'Content-Type: application/json' -d '{"search_param":"northampton%20county","frequency":"daily","insurance":60,"vacancy":0.05,"property_management":0.04,"capex":0.05,"repairs":0.05,"utilities":0,"down_payment":0.25,"closing_cost":0.04,"loan_interest":0.041,"loan_months":240,"additional_monthly_expenses":0,"no_bedrooms":3,"max_price":200000,"min_price":100000,"email":"hgmaxwellking@gmail.com"}'
 
-curl -X POST https://q0sku06vtg.execute-api.us-east-2.amazonaws.com/v1/api/emailers -H 'Content-Type: application/json' -d '{"search_param":"astoria%20nyc","frequency":"daily"}' -H "Authorization: Bearer eyJraWQiOiJzUWpVT3MwQnBLTEtWYTVzS1pcL3REM1Q2VFA3OHliSGxxbFhEejA0Nnh5VT0iLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJjZTFkYmM0Zi0yY2M0LTQxYjAtODM1OC02OGJiOWVkNDlmNjYiLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiaXNzIjoiaHR0cHM6XC9cL2NvZ25pdG8taWRwLnVzLWVhc3QtMi5hbWF6b25hd3MuY29tXC91cy1lYXN0LTJfbm5kM2g1WjFaIiwiY29nbml0bzp1c2VybmFtZSI6ImhnbWF4d2VsbGtpbmdAZ21haWwuY29tIiwib3JpZ2luX2p0aSI6ImVlZWM1NzFhLTZiZTEtNDA2MC04YjhiLTVmZGM5OWQwMTFjMyIsImF1ZCI6IjcwYXBiYXZsMWZzb2JlZDRqdDdsN21sMThoIiwiZXZlbnRfaWQiOiI2NmFlZGE4MC01MDUxLTQ2MGMtOTAzOS0zNTE5MDJjODM4ODYiLCJ0b2tlbl91c2UiOiJpZCIsImF1dGhfdGltZSI6MTY1Nzk3MDQ3OCwiZXhwIjoxNjU3OTc0MDc4LCJpYXQiOjE2NTc5NzA0NzgsImp0aSI6IjY5MGExOWNjLTJlNjctNGQ0My1iNTEzLTM4OWVkNzBlYjA4YSIsImVtYWlsIjoiaGdtYXh3ZWxsa2luZ0BnbWFpbC5jb20ifQ.nUSpgD8zaZLhcsA59_oLBs120Oo1sVaQDP_xfNUOl3fPkb7f30-UzNg2OdN3sgl-Uilu0jWd2o4IYgYHIxawvaHs5tlAq_nayx9MLR9Gze0w7_O82j7eNib4EplURPh00qW4WtHfBaPhJzfcLxU_bBYmFF9-zWXUBZRgXOYwencgW30S205GOu6H4zUIEmGYQBXcnDX6dJt-BicnGX1eo8Vt6RbBK22BCKxbDAsEuj70GBupcLlGuMKVCPJYJ9awM49liSgEsWTWXzSrjllOLTxvsXXOztRwTsqsQ53y5HixjUaML4elPz6ew9yV9EUxWb61IFysxjRj5JIHZBOsdQ"
+curl -X POST https://q0sku06vtg.execute-api.us-east-2.amazonaws.com/v1/api/emailers -H 'Content-Type: application/json' -d '{"search_param":"westchester","frequency":"daily"}' -H "Authorization: Bearer [token]"
+```
+
+###### Insert New Emailer
+Path: `/resend-code`
+Service: Auth
+Live example:
+```shell
+curl http://localhost:4000/emailers/test-search-param\?search_param=[your search param] -H "Authorization: Bearer [token]"
+
+curl https://q0sku06vtg.execute-api.us-east-2.amazonaws.com/v1/api/emailers/test-search-param\?search_param=westchester%20new%20york -H "Authorization: Bearer eyJraWQiOiJzUWpVT3MwQnBLTEtWYTVzS1pcL3REM1Q2VFA3OHliSGxxbFhEejA0Nnh5VT0iLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiI4ZTNjMmM0ZC1iYjQwLTRjYTYtYjAzYi0zMDY0MGZjZjkwMmYiLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiaXNzIjoiaHR0cHM6XC9cL2NvZ25pdG8taWRwLnVzLWVhc3QtMi5hbWF6b25hd3MuY29tXC91cy1lYXN0LTJfbm5kM2g1WjFaIiwiY29nbml0bzp1c2VybmFtZSI6InNhYmF5b25lQGdtYWlsLmNvbSIsIm9yaWdpbl9qdGkiOiIyN2FhYWE4Mi00NGVkLTQ3YzUtYmQxNi0wNTJmMzY5OTQ5YTAiLCJhdWQiOiI3MGFwYmF2bDFmc29iZWQ0anQ3bDdtbDE4aCIsImV2ZW50X2lkIjoiMjJiOWFmOWItMTEzOS00YTBhLWE5NjctYjg5ZDI1NDFmMWQ4IiwidG9rZW5fdXNlIjoiaWQiLCJhdXRoX3RpbWUiOjE2NTgwNjE2ODAsImV4cCI6MTY1ODA2NTI4MCwiaWF0IjoxNjU4MDYxNjgwLCJqdGkiOiIyODAzOTQxNy1iZWI1LTRmMTctYjYwZS1mNDY2ODE5MDVhYjgiLCJlbWFpbCI6InNhYmF5b25lQGdtYWlsLmNvbSJ9.PtXMjXyIemGhwoQ2jCmFKw1Oev3oSK1AActR9C8VYB72zFOzORMmdGz04oZ04OuXJrHNF0VoZmnox-9LDBp8X1gebnIyPdggPQ5FjyPtQaKLFXrqClO0yTIgTaaCOuslr0JmIuapt-O_JdO-7VDiZUat0OB4QPbfhCtCd3i3s-Z-1xprVIh8XM1jFq22SL_JwLBK9thSmyii4iTCGhb_dHxwfaPG96ZsMoPQoPEc0qLlBSBuaJi8Ja2mTr8gS8Yp--YeAgoV6YsixhmJge_4v3nlg4NerJC_QrpoKjvPYvauJ1FhllPTlvoLNwJHsHg1nvZWy0irPOYA-pInH1iQ-g"
 ```
 
 #### Env Example
@@ -76,3 +86,6 @@ HOST=0.0.0.0
 ENABLE_TLS=false
 AWS_REGION=us-east-2
 ```
+
+
+"insurance":60,"vacancy":0.05,"property":0.04,"capex":0.05,"repairs":0.05,"utilities":0,"down_payment":0.25,"closing_cost":0.04,"loan_interest":0.041,"loan_months":240,"additional_monthly_expenses":0,

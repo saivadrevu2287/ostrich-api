@@ -1,6 +1,8 @@
 use crate::{
     config::Config,
     error::{OstrichError, OstrichErrorType},
+    models::emailer::Emailer,
+    services::cash_on_cash::calculate_coc,
 };
 use reqwest::Error;
 use serde_derive::Deserialize;
@@ -12,7 +14,7 @@ impl From<Error> for OstrichError {
     fn from(e: Error) -> OstrichError {
         OstrichError::new(
             format!("Failed to fetch data {:?}", e),
-            OstrichErrorType::ListingError,
+            OstrichErrorType::ApiError,
         )
     }
 }
@@ -31,8 +33,8 @@ pub struct ListingResultsProp {
     pub propertyType: Option<String>,
     pub lotAreaValue: Option<f64>,
     pub address: Option<String>,
-    pub daysOnZillow: Option<i64>,
-    pub price: Option<i64>,
+    pub daysOnZillow: Option<f64>,
+    pub price: Option<f64>,
     pub unit: Option<String>,
     pub listingDateTime: Option<String>,
     pub longitude: Option<f64>,
@@ -40,14 +42,15 @@ pub struct ListingResultsProp {
     pub contingentListingType: Option<String>,
     pub listingStatus: Option<String>,
     pub zpid: Option<String>,
-    pub listingSubType: ListingResultsSubType,
+    #[serde(skip)]
+    pub listingSubType: Option<ListingResultsSubType>,
     pub imgSrc: Option<String>,
-    pub livingArea: Option<i64>,
-    pub bathrooms: Option<i64>,
+    pub livingArea: Option<f64>,
+    pub bathrooms: Option<f64>,
     pub lotAreaUnit: Option<String>,
     pub country: Option<String>,
     pub currency: Option<String>,
-    pub bedrooms: Option<i64>,
+    pub bedrooms: Option<f64>,
     pub hasImage: Option<bool>,
     pub newConstructionType: Option<String>,
 }
@@ -58,6 +61,67 @@ pub struct ZillowListingsSearchRoot {
     pub resultsPerPage: Option<i64>,
     pub totalResultCount: Option<i64>,
     pub totalPages: Option<i64>,
+}
+
+pub async fn get_zillow_listing_results(
+    config: Arc<Config>,
+    reqwest_client: Arc<reqwest::Client>,
+    api_url: String,
+) -> Result<ZillowListingsSearchRoot, OstrichError> {
+    log::info!("Getting listings at {}", api_url);
+
+    let listing_data = reqwest_client
+        .get(api_url)
+        .header("X-RapidAPI-Host", config.zillow_api.api_host.clone())
+        .header("X-RapidAPI-Key", config.zillow_api.api_key.clone())
+        .send()
+        .await?
+        .json::<ZillowListingsSearchRoot>()
+        .await
+        .map_err(|e| {
+            OstrichError::new(
+                format!(
+                    "Search Parameters did not result in a valid response {:?}",
+                    e
+                ),
+                OstrichErrorType::ListingResultError,
+            )
+        })?;
+
+    Ok(listing_data)
+}
+
+pub fn get_zillow_listing_url_from_emailer_record(
+    config: Arc<Config>,
+    emailer_record: &Emailer,
+) -> String {
+    let mut api_url = format!(
+        //?location=northampton%20county&home_type=Houses&minPrice=100000&maxPrice=200000&daysOn=1
+        "https://{}/propertyExtendedSearch?location={}&home_type=Houses&daysOn=1",
+        config.zillow_api.api_host, emailer_record.search_param
+    );
+
+    if emailer_record.max_price.is_some() {
+        api_url = format!("{}&maxPrice={}", api_url, emailer_record.max_price.unwrap());
+    }
+
+    if emailer_record.min_price.is_some() {
+        api_url = format!("{}&minPrice={}", api_url, emailer_record.min_price.unwrap());
+    }
+
+    api_url
+}
+
+pub fn get_zillow_listing_url_from_search_param(
+    config: Arc<Config>,
+    search_param: String,
+) -> String {
+    let api_url = format!(
+        "https://{}/propertyExtendedSearch?location={}&home_type=Houses",
+        config.zillow_api.api_host, search_param
+    );
+
+    api_url
 }
 
 #[derive(Deserialize, Debug)]
@@ -97,13 +161,13 @@ pub struct ZillowPropertySearchRoot {
     bathrooms: Option<i64>,
     annualHomeownersInsurance: Option<i64>,
     state: Option<String>,
-    rentZestimate: Option<i64>,
+    rentZestimate: Option<f64>,
     building: Option<String>,
     brokerId: Option<String>,
     yearBuilt: Option<i64>,
     brokerageName: Option<String>,
     dateSold: Option<String>,
-    price: Option<i64>,
+    price: Option<f64>,
     pageViewCount: Option<i64>,
     description: Option<String>,
     mortgageRates: Option<MortgageRates>,
@@ -148,72 +212,51 @@ pub struct Address {
     zipcode: Option<String>,
 }
 
-/*
-curl --request GET \
-    --url 'https://zillow-com1.p.rapidapi.com/propertyExtendedSearch?location=redhook%20brooklyn&home_type=Houses' \
-    --header 'X-RapidAPI-Host: zillow-com1.p.rapidapi.com' \
-    --header 'X-RapidAPI-Key: ****'
-*/
-pub async fn get_listing_results_from_search_param(
+pub async fn get_zillow_property_results_by_zpid(
     config: Arc<Config>,
-    search_param: String,
-) -> Result<ZillowListingsSearchRoot, Error> {
-    let api_url = format!(
-        "https://{}/propertyExtendedSearch?location={}&home_type=Houses",
-        config.zillow_api.api_host, search_param
-    );
-    log::info!("Getting listings at {}", api_url);
-
-    let listing_data = reqwest::Client::new()
-        .get(api_url)
-        .header("X-RapidAPI-Host", config.zillow_api.api_host.clone())
-        .header("X-RapidAPI-Key", config.zillow_api.api_key.clone())
-        .send()
-        .await?
-        .json::<ZillowListingsSearchRoot>()
-        .await?;
-
-    Ok(listing_data)
-}
-
-/*
-curl --request GET \
-    --url 'https://zillow-com1.p.rapidapi.com/property?zpid=31944863' \
-    --header 'X-RapidAPI-Host: zillow-com1.p.rapidapi.com' \
-    --header 'X-RapidAPI-Key: ****'
-*/
-pub async fn get_property_results_by_zpid(
-    config: Arc<Config>,
+    reqwest_client: Arc<reqwest::Client>,
     zpid: String,
-) -> Result<ZillowPropertySearchRoot, Error> {
+) -> Result<ZillowPropertySearchRoot, OstrichError> {
     let api_url = format!(
         "https://{}/property?zpid={}",
         config.zillow_api.api_host, zpid
     );
     log::info!("Getting property at {}", api_url);
 
-    let listing_data = reqwest::Client::new()
+    let listing_data = reqwest_client
         .get(api_url)
         .header("X-RapidAPI-Host", config.zillow_api.api_host.clone())
         .header("X-RapidAPI-Key", config.zillow_api.api_key.clone())
         .send()
         .await?
         .json::<ZillowPropertySearchRoot>()
-        .await?;
+        .await
+        .map_err(|e| {
+            OstrichError::new(
+                format!(
+                    "Zillow Property {} did not result in a valid response {:?}",
+                    zpid, e
+                ),
+                OstrichErrorType::PropertyResultError,
+            )
+        })?;
 
     Ok(listing_data)
 }
 
 pub async fn add_property_details_to_body_by_zpid(
     config: Arc<Config>,
+    reqwest_client: Arc<reqwest::Client>,
+    emailer: &Emailer,
     zpid: String,
     mut body: String,
 ) -> Result<String, String> {
-    log::info!("Getting property results for {}", zpid);
-    match get_property_results_by_zpid(config.clone(), zpid).await {
+    match get_zillow_property_results_by_zpid(config.clone(), reqwest_client.clone(), zpid).await {
         Ok(property_result) => {
             log::debug!("{:?}", property_result);
-            let formatted_property_string = format_property_data_for_email(property_result);
+            let formatted_property_string = format_property_data_for_email(
+                ZillowPropertyEmailData::new(property_result, emailer),
+            );
             log::debug!("{:?}", formatted_property_string);
 
             body = format!(
@@ -226,58 +269,109 @@ pub async fn add_property_details_to_body_by_zpid(
     }
 }
 
-pub fn format_property_data_for_email(property: ZillowPropertySearchRoot) -> String {
-    let address = match property.address {
-        Some(address) => {
-            format!(
-                "{} {}, {} {}",
-                address.streetAddress.map_or(String::from("Missing"), |x| x),
-                address.city.map_or(String::from("Missing"), |x| x),
-                address.state.map_or(String::from("Missing"), |x| x),
-                address.zipcode.map_or(String::from("Missing"), |x| x)
-            )
+pub struct ZillowPropertyEmailData {
+    address: String,
+    specs: String,
+    price: String,
+    rent_estimate: String,
+    time_on_zillow: String,
+    img_src: String,
+    url: String,
+    cash_on_cash: String,
+}
+
+impl ZillowPropertyEmailData {
+    pub fn new(property: ZillowPropertySearchRoot, emailer: &Emailer) -> Self {
+        let address = match property.address {
+            Some(address) => {
+                format!(
+                    "{} {}, {} {}",
+                    address.streetAddress.map_or(String::from("Missing"), |x| x),
+                    address.city.map_or(String::from("Missing"), |x| x),
+                    address.state.map_or(String::from("Missing"), |x| x),
+                    address.zipcode.map_or(String::from("Missing"), |x| x)
+                )
+            }
+            None => String::from("MISSING ADDRESS"),
+        };
+
+        let specs = format!(
+            "Bedrooms: {} | Bathrooms: {}",
+            property.bedrooms.map_or(0, |x| x),
+            property.bathrooms.map_or(0, |x| x)
+        );
+
+        let price = property
+            .price
+            .map_or(String::from("Missing"), |x| x.separate_with_commas());
+        let rent_estimate = property
+            .rentZestimate
+            .map_or(String::from("Missing"), |x| x.separate_with_commas());
+        let time_on_zillow = property.timeOnZillow.map_or(String::from("Missing"), |x| x);
+        let img_src = property.imgSrc.map_or(String::from("Missing"), |x| x);
+        let url = property.url.map_or(String::from("Missing"), |x| x);
+
+        let cash_on_cash = if property.price.is_some()
+            && property.rentZestimate.is_some()
+            && property.propertyTaxRate.is_some()
+        {
+            let coc = calculate_coc(
+                emailer,
+                property.price.unwrap(),
+                property.propertyTaxRate.unwrap(),
+                property.rentZestimate.unwrap(),
+            );
+            format!("{}%", coc)
+        } else {
+            String::from("Missing fields for COC")
+        };
+
+        Self {
+            address,
+            specs,
+            price,
+            rent_estimate,
+            time_on_zillow,
+            img_src,
+            url,
+            cash_on_cash,
         }
-        None => String::from("MISSING ADDRESS"),
-    };
+    }
+}
 
-    let specs = format!(
-        "Bedrooms: {} | Bathrooms: {}",
-        property.bedrooms.map_or(0, |x| x),
-        property.bathrooms.map_or(0, |x| x)
-    );
-
+pub fn format_property_data_for_email(property: ZillowPropertyEmailData) -> String {
     format!(
         "
         <h2>{}</h2>
         <h4>{}</h4>
         <h4>Price: ${}</h4>
+        <h4>Cash On Cash: {}%</h4>
         <h4>Renting estimated: ${}</h4>
         <h4>Days on Market: {}</h4>
         <img src=\"{}\">
         <a href=\"https://www.zillow.com{}\">Check it out!</a>
         ",
-        address,
-        specs,
-        property
-            .price
-            .map_or(String::from("Missing"), |x| x.separate_with_commas()),
-        property
-            .rentZestimate
-            .map_or(String::from("Missing"), |x| x.separate_with_commas()),
-        property.timeOnZillow.map_or(String::from("Missing"), |x| x),
-        property.imgSrc.map_or(String::from("Missing"), |x| x),
-        property.url.map_or(String::from("Missing"), |x| x)
+        property.address,
+        property.specs,
+        property.price,
+        property.cash_on_cash,
+        property.rent_estimate,
+        property.time_on_zillow,
+        property.img_src,
+        property.url
     )
 }
 
 pub async fn get_listing_email_for_search_params(
     config: Arc<Config>,
-    search_param: String,
+    reqwest_client: Arc<reqwest::Client>,
+    emailer_record: &Emailer,
     mut body: String,
     delay: u64,
 ) -> Result<String, OstrichError> {
+    let api_url = get_zillow_listing_url_from_emailer_record(config.clone(), emailer_record);
     let listing_results =
-        get_listing_results_from_search_param(config.clone(), search_param.clone()).await?;
+        get_zillow_listing_results(config.clone(), reqwest_client.clone(), api_url).await?;
 
     log::debug!("listing_results = {:?}", listing_results);
 
@@ -295,13 +389,19 @@ pub async fn get_listing_email_for_search_params(
         .map(|x| x.unwrap())
     {
         sleep(Duration::from_millis(delay)).await;
-        body = add_property_details_to_body_by_zpid(config.clone(), zpid.clone(), body)
-            .await
-            .map_err(|body| {
-                log::error!("Could not get details for {}!", zpid);
-                body
-            })
-            .unwrap();
+        body = add_property_details_to_body_by_zpid(
+            config.clone(),
+            reqwest_client.clone(),
+            emailer_record,
+            zpid.clone(),
+            body,
+        )
+        .await
+        .map_err(|body| {
+            log::error!("Could not get details for {}!", zpid);
+            body
+        })
+        .unwrap();
     }
 
     Ok(body)

@@ -10,12 +10,17 @@ async fn main() {
 
     let config = Arc::new(Config::new(false));
     let db_conn = Arc::new(DbConn::new(&config.db_path));
+    let reqwest_client = Arc::new(reqwest::Client::new());
 
     let user = routes::user::get_all_users(db_conn.clone()).and_then(handlers::user::get_all_users);
     let emailer = routes::emailer::get_all_emailers(db_conn.clone())
         .and_then(handlers::emailer::get_all_emailers)
         .or(routes::emailer::add_emailer(db_conn.clone())
-            .and_then(handlers::emailer::insert_emailer));
+            .and_then(handlers::emailer::insert_emailer)
+            .or(
+                routes::emailer::test_emailer_params(config.clone(), reqwest_client.clone())
+                    .and_then(handlers::emailer::test_emailer_search_params),
+            ));
 
     let end = warp::get()
         .and(warp::path("health"))

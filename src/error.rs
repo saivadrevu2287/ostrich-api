@@ -1,16 +1,17 @@
-use std::error::Error;
-use std::fmt;
+use std::{error::Error, fmt};
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub enum OstrichErrorType {
     EmailError,
-    ListingError,
+    ListingResultError,
+    PropertyResultError,
+    ApiError,
 }
 
 #[derive(Debug)]
 pub struct OstrichError {
-    details: String,
-    etype: OstrichErrorType,
+    pub details: String,
+    pub etype: OstrichErrorType,
 }
 
 impl OstrichError {
@@ -35,5 +36,5 @@ impl Error for OstrichError {
 }
 
 pub fn map_ostrich_error(e: OstrichError) -> () {
-    log::error!("{:?}", e)
+    log::error!("{:?}", e);
 }

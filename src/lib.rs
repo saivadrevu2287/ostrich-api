@@ -12,7 +12,11 @@ pub mod schema;
 pub mod services;
 pub mod utils;
 
-use crate::{config::Config, db_conn::DbConn, utils::{decode_bearer, JwtPayload}};
+use crate::{
+    config::Config,
+    db_conn::DbConn,
+    utils::{decode_bearer, JwtPayload},
+};
 use aws_sdk_cognitoidentityprovider::Client as CognitoClient;
 use serde::Serialize;
 use std::error::Error;
@@ -39,6 +43,12 @@ pub fn with_db_conn(conn: Arc<DbConn>) -> warp::filters::BoxedFilter<(Arc<DbConn
 
 async fn with_jwt(jwt: String) -> Result<JwtPayload, warp::Rejection> {
     decode_bearer(&jwt).map_err(|_| warp::reject::custom(BadJwt))
+}
+
+pub fn with_reqwest_client(
+    client: Arc<reqwest::Client>,
+) -> warp::filters::BoxedFilter<(Arc<reqwest::Client>,)> {
+    warp::any().map(move || client.clone()).boxed()
 }
 
 pub async fn get_user_service_health(config: Arc<Config>) -> Result<impl Reply, Infallible> {
