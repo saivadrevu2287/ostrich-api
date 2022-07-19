@@ -60,7 +60,7 @@ Path: `/resend-code`
 Service: Auth
 Live example:
 ```shell
-curl -X POST http://localhost:4000/emailers -H 'Content-Type: application/json' -d '{"search_param":"northampton%20county","frequency":"daily","insurance":60,"vacancy":0.05,"property_management":0.04,"capex":0.05,"repairs":0.05,"utilities":0,"down_payment":0.25,"closing_cost":0.04,"loan_interest":0.041,"loan_months":240,"additional_monthly_expenses":0,"no_bedrooms":3,"max_price":200000,"min_price":100000,"email":"hgmaxwellking@gmail.com"}'
+curl -X POST https://q0sku06vtg.execute-api.us-east-2.amazonaws.com/v1/api/emailers -H 'Content-Type: application/json' -d '{"search_param":"astoria%20nyc","frequency":"daily","insurance":60,"vacancy":0.05,"property_management":0.04,"capex":0.05,"repairs":0.05,"utilities":0,"down_payment":0.25,"closing_cost":0.04,"loan_interest":0.041,"loan_months":240,"additional_monthly_expenses":0,"no_bedrooms":3,"max_price":200000,"min_price":100000,"email":"hgmaxwellking@gmail.com"}'
 
 curl -X POST https://q0sku06vtg.execute-api.us-east-2.amazonaws.com/v1/api/emailers -H 'Content-Type: application/json' -d '{"search_param":"westchester","frequency":"daily"}' -H "Authorization: Bearer [token]"
 ```

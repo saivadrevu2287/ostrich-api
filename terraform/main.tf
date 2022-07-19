@@ -96,6 +96,15 @@ resource "aws_ecr_repository" "user_repository" {
   }
 }
 
+resource "aws_ecr_repository" "email_job_repository" {
+  name                 = var.email_job_repository_name
+  image_tag_mutability = "MUTABLE"
+
+  image_scanning_configuration {
+    scan_on_push = false
+  }
+}
+
 # Cluster is compute that service will run on
 resource "aws_ecs_cluster" "fargate_cluster" {
   name = "OstrichCluster"
@@ -113,6 +122,9 @@ resource "aws_cloudwatch_log_group" "AuthCloudWatchLogGroup" {
 }
 resource "aws_cloudwatch_log_group" "UserCloudWatchLogGroup" {
   name = "${var.user_ecs_name}LogGroup"
+}
+resource "aws_cloudwatch_log_group" "EmailJobCloudWatchLogGroup" {
+  name = "${var.email_job_ecs_name}LogGroup"
 }
 
 # Create new IAM role for execution policy to use
@@ -228,6 +240,43 @@ resource "aws_ecs_task_definition" "user_ecs_task_definition" {
             awslogs-group : "${var.user_ecs_name}LogGroup",
             awslogs-region : "${data.aws_region.current_region.name}",
             awslogs-stream-prefix : "${var.user_ecs_name}"
+          }
+        }
+        portMappings = [
+          {
+            containerPort = 80
+            hostPort      = 80
+          }
+        ]
+      }
+    ]
+  )
+}
+resource "aws_ecs_task_definition" "email_job_ecs_task_definition" {
+  family                   = var.email_job_ecs_name
+  execution_role_arn       = aws_iam_role.UserExecutionRole.arn
+  network_mode             = "awsvpc"
+  requires_compatibilities = ["FARGATE"]
+  cpu                      = var.fargate_cpu
+  memory                   = var.fargate_mem
+  container_definitions = jsonencode(
+    [
+      {
+        name      = "${var.email_job_ecs_name}"
+        image     = "${aws_ecr_repository.email_job_repository.repository_url}:${var.image_tag}"
+        cpu       = "${var.container_cpu}"
+        memory    = "${var.container_mem}"
+        essential = true
+        environment = [
+          { name : "PORT", value : "80" },
+          { name : "AUTH_SERVICE_URL", value : aws_lb.auth_load_balancer.dns_name }
+        ]
+        logConfiguration : {
+          logDriver : "awslogs",
+          options : {
+            awslogs-group : "${var.email_job_ecs_name}LogGroup",
+            awslogs-region : "${data.aws_region.current_region.name}",
+            awslogs-stream-prefix : "${var.email_job_ecs_name}"
           }
         }
         portMappings = [

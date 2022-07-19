@@ -22,10 +22,16 @@ async fn main() {
                     .and_then(handlers::emailer::test_emailer_search_params),
             ));
 
+    let with_control_origin = warp::reply::with::header("Access-Control-Allow-Origin", "*");
+    let with_content_allow =
+        warp::reply::with::header("Access-Control-Allow-Headers", "Content-Type");
+
     let end = warp::get()
         .and(warp::path("health"))
         .map(|| warp::reply())
         .or(emailer.or(user))
+        .with(with_control_origin)
+        .with(with_content_allow)
         .with(warp::log("user"));
 
     let socket_address = config

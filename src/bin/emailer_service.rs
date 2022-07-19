@@ -51,7 +51,7 @@ async fn main() -> Result<(), ()> {
                 match etype {
                     OstrichErrorType::ListingResultError => {
                         log::info!("Sending followup email to {}", to);
-                        email::send_empty_zillow_listings_email(
+                        let _ = email::send_empty_zillow_listings_email(
                             &email_client,
                             config.clone(),
                             &to,
@@ -64,7 +64,7 @@ async fn main() -> Result<(), ()> {
                 }
             }
             Ok(body) => {
-                email::send_zillow_listings_email(&email_client, config.clone(), &to, &body)
+                let _ = email::send_zillow_listings_email(&email_client, config.clone(), &to, &body)
                     .await
                     .map_err(map_ostrich_error);
             }

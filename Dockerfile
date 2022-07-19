@@ -10,18 +10,19 @@ RUN cargo build --release
 
 # Run actual build
 COPY ./src ./src
-RUN cargo build --release --bin user_service
+RUN cargo build --release --bin emailer_service
 
 # Run image
-FROM debian:buster-slim
+FROM debian:bookworm-slim
 RUN apt-get update \
     && apt-get -y install libpq-dev \
+    && apt-get -y install libssl1.1 \
     && apt-get install -y --no-install-recommends ca-certificates
 
-RUN update-ca-certificates
-# RUN apt-get update && apt-get install -y extra-runtime-dependencies && rm -rf /var/lib/apt/lists/*
-COPY --from=builder  /usr/src/ostrich-api/target/release/user_service /usr/local/bin/user-service
 
-WORKDIR /usr/user-service
+# RUN apt-get update && apt-get install -y extra-runtime-dependencies && rm -rf /var/lib/apt/lists/*
+COPY --from=builder  /usr/src/ostrich-api/target/release/emailer_service /usr/local/bin/emailer-service
+
+WORKDIR /usr/emailer-service
 COPY ./.env ./.env
-CMD ["user-service"]
+CMD ["emailer-service"]

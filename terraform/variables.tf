@@ -15,6 +15,12 @@ variable "user_ecs_name" {
   default     = "UserEcsService"
 }
 
+variable "email_job_ecs_name" {
+  description = "Name primitive to use for all resources created"
+  type        = string
+  default     = "EmailJobEcsService"
+}
+
 variable "auth_repository_name" {
   description = "Value of the Name tag for the Auth ECR Repository"
   type        = string
@@ -25,6 +31,12 @@ variable "user_repository_name" {
   description = "Value of the Name tag for the User ECR Repository"
   type        = string
   default     = "ostrich_user_repository"
+}
+
+variable "email_job_repository_name" {
+  description = "Value of the Name tag for the User ECR Repository"
+  type        = string
+  default     = "ostrich_email_job_repository"
 }
 
 variable "cidr_vpc" {
