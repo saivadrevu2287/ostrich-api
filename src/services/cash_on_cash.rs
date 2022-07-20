@@ -7,7 +7,7 @@ fn cash_on_cash(monthly_cash_flow: f64, initial_total_investment: f64) -> f64 {
 
 // ITI = 29% of Purchase Price(PP)(Which comes from Zillow)
 fn initial_total_investment(emailer: &Emailer, purchase_price: f64) -> f64 {
-    (emailer.down_payment + emailer.closing_cost) * purchase_price
+    ((emailer.down_payment / 100.0) + (emailer.closing_cost / 100.0)) * purchase_price
 }
 
 // MCF = Monthly Gross Income(MGI)(comes from Zillow) - Monthly Expenses - Monthly Debt Service
@@ -18,18 +18,18 @@ fn monthly_cash_flow(
     monthly_debt_service: f64,
 ) -> f64 {
     monthly_gross_income
-        - monthly_gross_income * emailer.vacancy
+        - monthly_gross_income * (emailer.vacancy / 100.0)
         - monthly_expenses
         - monthly_debt_service
 }
 // Monthly Expenses = Taxes(comes from Zillow) + Insurance($60) + Vacancy(5% of MGI) + Property Management(4% of MGI)+ Capex(5% of MGI) + Repairs(5% of MGI) + Utilities($0)
 fn monthly_expenses(emailer: &Emailer, taxes: f64, monthly_gross_income: f64) -> f64 {
-    let income = monthly_gross_income - emailer.vacancy * monthly_gross_income;
+    let income = monthly_gross_income - (emailer.vacancy / 100.0) * monthly_gross_income;
 
     let insurance = emailer.insurance;
-    let property_management = emailer.property_management * income;
-    let capex = emailer.capex * income;
-    let repairs = emailer.repairs * income;
+    let property_management = (emailer.property_management / 100.0) * income;
+    let capex = (emailer.capex / 100.0) * income;
+    let repairs = (emailer.repairs / 100.0) * income;
     let utilities = emailer.utilities;
 
     taxes + insurance + property_management + capex + repairs + utilities
@@ -38,11 +38,11 @@ fn monthly_expenses(emailer: &Emailer, taxes: f64, monthly_gross_income: f64) ->
 // Monthly Debt Service = .61 % of Loan
 fn monthly_debt_service(emailer: &Emailer, loan: f64) -> f64 {
     // i
-    let monthly_interest = emailer.loan_interest / 12.0;
+    let monthly_interest = (emailer.loan_interest / 100.0) / 12.0;
     // n
     let months = emailer.loan_months;
     // (1 + i)^-n
-    let exponent = f64::powf(1.0 + monthly_interest, 1.0 / months);
+    let exponent = f64::powf(1.0 / (1.0 + monthly_interest), months);
     // 1 - (1 + i)^-n
     let denominator = 1.0 - exponent;
     // p * (i / (1 - (1 + i)^-n))
@@ -50,9 +50,8 @@ fn monthly_debt_service(emailer: &Emailer, loan: f64) -> f64 {
 }
 
 // Loan = 75% of Purchase Price(comes from Zillow)
-// (1.0 - 0.25) * 649999
 fn loan(emailer: &Emailer, purchase_price: f64) -> f64 {
-    (1.0 - emailer.down_payment) * purchase_price
+    (1.0 - (emailer.down_payment / 100.0)) * purchase_price
 }
 
 pub fn calculate_coc(
@@ -61,9 +60,7 @@ pub fn calculate_coc(
     taxes: f64,
     monthly_gross_income: f64,
 ) -> f64 {
-    // 487,499.25
     let loan = loan(emailer, purchase_price);
-    // 1,406,389,662.888143
     let monthly_debt_service = monthly_debt_service(emailer, loan);
     let monthly_expenses = monthly_expenses(emailer, taxes, monthly_gross_income)
         + emailer.additional_monthly_expenses;
@@ -90,14 +87,14 @@ fn calculate_cash_on_cash() {
         search_param: String::from("northampton%20county"),
         frequency: String::from("daily"),
         insurance: 60.0,
-        vacancy: 0.05,
-        property_management: 0.04,
-        capex: 0.05,
-        repairs: 0.05,
+        vacancy: 5.0,
+        property_management: 4.0,
+        capex: 5.0,
+        repairs: 5.0,
         utilities: 0.0,
-        down_payment: 0.25,
-        closing_cost: 0.04,
-        loan_interest: 0.041,
+        down_payment: 25.0,
+        closing_cost: 4.0,
+        loan_interest: 4.0,
         loan_months: 240.0,
         additional_monthly_expenses: 0.0,
         no_bedrooms: Some(3),
@@ -110,15 +107,57 @@ fn calculate_cash_on_cash() {
         active: true,
     };
 
-    let price = 649999.0;
-    let taxes = 1000.0;
-    let rent = 1850.0;
+    let purchase_price = 290000.0;
+    let taxes = 157.0;
+    let monthly_gross_income = 2400.0;
 
-    assert_eq!(487499.25, loan(&emailer, price));
-    assert_eq!(
-        -117198748.25988717,
-        monthly_debt_service(&emailer, loan(&emailer, price))
+    let loan = loan(&emailer, purchase_price);
+    let monthly_debt_service = monthly_debt_service(&emailer, loan);
+    let monthly_expenses = monthly_expenses(&emailer, taxes, monthly_gross_income)
+        + &emailer.additional_monthly_expenses;
+
+    let initial_total_investment = initial_total_investment(&emailer, purchase_price);
+
+    let monthly_cash_flow = monthly_cash_flow(
+        &emailer,
+        monthly_gross_income,
+        monthly_expenses,
+        monthly_debt_service,
     );
 
-    assert_eq!(-16.096, calculate_coc(&emailer, price, taxes, rent));
+    let cash_on_cash = cash_on_cash(monthly_cash_flow, initial_total_investment);
+
+    // cashOnCash: 5.911588602925929
+    // initialTotalInvestment: 84100
+    // loan: 217500
+    // monthlyCashFlow: 414.3038345883922
+    // monthlyDebtService: 1329.4961654116078
+    // monthlyExpenses: 536.2
+
+    assert_eq!(217500.0, loan);
+
+    // i
+    let monthly_interest = (emailer.loan_interest / 100.0) / 12.0;
+    // n
+    let months = emailer.loan_months;
+    // (1 / (1 + i))^n
+    let exponent = f64::powf(1.0 / (1.0 + monthly_interest), months);
+    // 1 - (1 + i)^-n
+    let denominator = 1.0 - exponent;
+    // p * (i / (1 - (1 + i)^-n))
+
+    // denominator: 0.558952345507466
+    // exponent: 0.441047654492534
+    // monthlyInterest: 0.003416666666666667
+    // months: 240
+    assert_eq!(0.0033333333333333335, monthly_interest);
+    assert_eq!(240.0, months);
+    assert_eq!(0.44992713918832056, exponent);
+    assert_eq!(0.5500728608116794, denominator);
+
+    assert_eq!(1318.00721622623, monthly_debt_service);
+    assert_eq!(536.2, monthly_expenses);
+    assert_eq!(84100.0, initial_total_investment);
+    assert_eq!(425.79278377377, monthly_cash_flow);
+    assert_eq!(6.075521290469965, cash_on_cash);
 }

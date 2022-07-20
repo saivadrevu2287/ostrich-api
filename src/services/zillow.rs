@@ -9,6 +9,7 @@ use serde_derive::Deserialize;
 use std::sync::Arc;
 use thousands::Separable;
 use tokio::time::{sleep, Duration};
+use urlencoding::encode;
 
 impl From<Error> for OstrichError {
     fn from(e: Error) -> OstrichError {
@@ -98,7 +99,7 @@ pub fn get_zillow_listing_url_from_emailer_record(
     let mut api_url = format!(
         //?location=northampton%20county&home_type=Houses&minPrice=100000&maxPrice=200000&daysOn=1
         "https://{}/propertyExtendedSearch?location={}&home_type=Houses&daysOn=1",
-        config.zillow_api.api_host, emailer_record.search_param
+        config.zillow_api.api_host, encode(&emailer_record.search_param)
     );
 
     if emailer_record.max_price.is_some() {
@@ -118,7 +119,7 @@ pub fn get_zillow_listing_url_from_search_param(
 ) -> String {
     let api_url = format!(
         "https://{}/propertyExtendedSearch?location={}&home_type=Houses",
-        config.zillow_api.api_host, search_param
+        config.zillow_api.api_host, encode(&search_param)
     );
 
     api_url
@@ -321,9 +322,9 @@ impl ZillowPropertyEmailData {
                 property.propertyTaxRate.unwrap(),
                 property.rentZestimate.unwrap(),
             );
-            format!("{}%", coc)
+            format!("{:.2}%", coc)
         } else {
-            String::from("Missing fields for COC")
+            String::from("<a href=\"https://chrome.google.com/webstore/detail/ostrich/aicgkflmidjkbcenllnnlbnfnmicpmgo\">Use Ostrich Plugin to run this calculation!</a>")
         };
 
         Self {
@@ -345,7 +346,7 @@ pub fn format_property_data_for_email(property: ZillowPropertyEmailData) -> Stri
         <h2>{}</h2>
         <h4>{}</h4>
         <h4>Price: ${}</h4>
-        <h4>Cash On Cash: {}%</h4>
+        <h4>Cash On Cash: {}</h4>
         <h4>Renting estimated: ${}</h4>
         <h4>Days on Market: {}</h4>
         <img src=\"{}\">
