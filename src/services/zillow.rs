@@ -99,7 +99,8 @@ pub fn get_zillow_listing_url_from_emailer_record(
     let mut api_url = format!(
         //?location=northampton%20county&home_type=Houses&minPrice=100000&maxPrice=200000&daysOn=1
         "https://{}/propertyExtendedSearch?location={}&home_type=Houses&daysOn=1",
-        config.zillow_api.api_host, encode(&emailer_record.search_param)
+        config.zillow_api.api_host,
+        encode(&emailer_record.search_param)
     );
 
     if emailer_record.max_price.is_some() {
@@ -119,7 +120,8 @@ pub fn get_zillow_listing_url_from_search_param(
 ) -> String {
     let api_url = format!(
         "https://{}/propertyExtendedSearch?location={}&home_type=Houses",
-        config.zillow_api.api_host, encode(&search_param)
+        config.zillow_api.api_host,
+        encode(&search_param)
     );
 
     api_url
@@ -390,7 +392,7 @@ pub async fn get_listing_email_for_search_params(
         .map(|x| x.unwrap())
     {
         sleep(Duration::from_millis(delay)).await;
-        body = add_property_details_to_body_by_zpid(
+        body = match add_property_details_to_body_by_zpid(
             config.clone(),
             reqwest_client.clone(),
             emailer_record,
@@ -398,11 +400,13 @@ pub async fn get_listing_email_for_search_params(
             body,
         )
         .await
-        .map_err(|body| {
-            log::error!("Could not get details for {}!", zpid);
-            body
-        })
-        .unwrap();
+        {
+            Err(body) => {
+                log::error!("Could not get details for {}!", zpid);
+                body
+            }
+            Ok(body) => body,
+        };
     }
 
     Ok(body)

@@ -12,6 +12,10 @@ async fn main() {
     let db_conn = Arc::new(DbConn::new(&config.db_path));
     let reqwest_client = Arc::new(reqwest::Client::new());
 
+    let with_control_origin = warp::reply::with::header("Access-Control-Allow-Origin", "*");
+    let with_content_allow =
+        warp::reply::with::header("Access-Control-Allow-Headers", "Content-Type");
+
     let user = routes::user::get_all_users(db_conn.clone()).and_then(handlers::user::get_all_users);
     let emailer = routes::emailer::get_all_emailers(db_conn.clone())
         .and_then(handlers::emailer::get_all_emailers)
@@ -20,18 +24,14 @@ async fn main() {
             .or(
                 routes::emailer::test_emailer_params(config.clone(), reqwest_client.clone())
                     .and_then(handlers::emailer::test_emailer_search_params),
-            ));
-
-    let with_control_origin = warp::reply::with::header("Access-Control-Allow-Origin", "*");
-    let with_content_allow =
-        warp::reply::with::header("Access-Control-Allow-Headers", "Content-Type");
+            ))
+            .with(with_control_origin)
+            .with(with_content_allow);
 
     let end = warp::get()
         .and(warp::path("health"))
         .map(|| warp::reply())
         .or(emailer.or(user))
-        .with(with_control_origin)
-        .with(with_content_allow)
         .with(warp::log("user"));
 
     let socket_address = config

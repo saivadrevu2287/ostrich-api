@@ -64,9 +64,10 @@ async fn main() -> Result<(), ()> {
                 }
             }
             Ok(body) => {
-                let _ = email::send_zillow_listings_email(&email_client, config.clone(), &to, &body)
-                    .await
-                    .map_err(map_ostrich_error);
+                let _ =
+                    email::send_zillow_listings_email(&email_client, config.clone(), &to, &body)
+                        .await
+                        .map_err(map_ostrich_error);
             }
         }
     }
