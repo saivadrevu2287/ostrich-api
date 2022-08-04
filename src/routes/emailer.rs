@@ -12,21 +12,45 @@ fn path_prefix() -> BoxedFilter<()> {
 pub fn get_all_emailers(db_conn: Arc<DbConn>) -> BoxedFilter<(Arc<DbConn>,)> {
     warp::get()
         .and(path_prefix())
+        .and(warp::path("all"))
         .and(warp::path::end())
         .and(with_db_conn(db_conn))
         .boxed()
 }
 
-pub fn add_emailer(
-    db_conn: Arc<DbConn>,
-) -> BoxedFilter<(/*JwtPayload,*/ Arc<DbConn>, PostEmailer)> {
+pub fn add_emailer(db_conn: Arc<DbConn>) -> BoxedFilter<(JwtPayload, Arc<DbConn>, PostEmailer)> {
     warp::post()
         .and(path_prefix())
         .and(warp::path::end())
-        //.and(warp::header::<String>("authorization"))
-        //.and_then(with_jwt)
+        .and(warp::header::<String>("authorization"))
+        .and_then(with_jwt)
         .and(with_db_conn(db_conn))
         .and(warp::body::json())
+        .boxed()
+}
+
+pub fn get_emailer_by_authentication_id(
+    db_conn: Arc<DbConn>,
+) -> BoxedFilter<(JwtPayload, Arc<DbConn>)> {
+    warp::get()
+        .and(path_prefix())
+        .and(warp::path::end())
+        .and(warp::header::<String>("authorization"))
+        .and_then(with_jwt)
+        .and(with_db_conn(db_conn))
+        .boxed()
+}
+
+pub fn delete_emailer_by_authentication_id(
+    db_conn: Arc<DbConn>,
+) -> BoxedFilter<(JwtPayload, Arc<DbConn>, i32)> {
+    warp::delete()
+        .and(path_prefix())
+        .and(warp::header::<String>("authorization"))
+        .and_then(with_jwt)
+        .and(with_db_conn(db_conn))
+        .and(warp::path::param())
+        .and(warp::path::end())
         .boxed()
 }
 

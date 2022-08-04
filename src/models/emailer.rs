@@ -60,7 +60,6 @@ pub struct NewEmailer {
 
 #[derive(Deserialize)]
 pub struct PostEmailer {
-    email: String,
     search_param: String,
     frequency: String,
     max_price: Option<f64>,
@@ -80,11 +79,11 @@ pub struct PostEmailer {
 }
 
 impl NewEmailer {
-    pub fn new(post_emailer: PostEmailer, authentication_id: String) -> Self {
+    pub fn new(post_emailer: PostEmailer, authentication_id: String, email: String) -> Self {
         NewEmailer {
             search_param: post_emailer.search_param,
             authentication_id,
-            email: post_emailer.email,
+            email,
             frequency: post_emailer.frequency,
             max_price: post_emailer.max_price,
             min_price: post_emailer.min_price,
@@ -121,6 +120,28 @@ pub fn create(conn: &PgConnection, new_emailer: &NewEmailer) -> Emailer {
 
 pub fn read(conn: &PgConnection) -> Vec<Emailer> {
     emailers::table
+        .filter(emailers::active.eq(true))
         .load::<Emailer>(conn)
         .expect("Error loading emailer")
+}
+
+pub fn read_by_authentication_id(conn: &PgConnection, authentication_id: String) -> Vec<Emailer> {
+    emailers::table
+        .filter(emailers::authentication_id.eq(authentication_id))
+        .filter(emailers::active.eq(true))
+        .load::<Emailer>(conn)
+        .expect("Error loading emailer")
+}
+
+pub fn delete_by_id_and_authentication_id(
+    conn: &PgConnection,
+    id: i32,
+    authentication_id: String,
+) -> Vec<Emailer> {
+    diesel::update(emailers::table)
+        .set(emailers::active.eq(false))
+        .filter(emailers::authentication_id.eq(authentication_id))
+        .filter(emailers::id.eq(id))
+        .load::<Emailer>(conn)
+        .expect("Error soft deleting the email record")
 }

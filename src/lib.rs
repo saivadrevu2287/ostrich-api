@@ -88,7 +88,10 @@ pub async fn handle_rejection(err: Rejection) -> Result<impl Reply, Infallible> 
     } else if let Some(e) = err.find::<services::cognito::CognitoError>() {
         code = StatusCode::BAD_REQUEST;
         message = e.cause.clone();
-    } else if let Some(e) = err.find::<BadJwt>() {
+    } else if let Some(e) = err.find::<error::OstrichError>() {
+        code = StatusCode::BAD_REQUEST;
+        message = e.details.clone();
+    } else if let Some(_) = err.find::<BadJwt>() {
         code = StatusCode::BAD_REQUEST;
         message = String::from("JWT was not well formed!");
     } else if let Some(e) = err.find::<BodyDeserializeError>() {

@@ -1,6 +1,7 @@
 use crate::{
     config::Config,
     error::{OstrichError, OstrichErrorType},
+    handlers::emailer::SearchParamQuery,
     models::emailer::Emailer,
     services::cash_on_cash::calculate_coc,
 };
@@ -114,15 +115,31 @@ pub fn get_zillow_listing_url_from_emailer_record(
     api_url
 }
 
-pub fn get_zillow_listing_url_from_search_param(
+pub fn get_zillow_listing_url_from_test_emailer_record(
     config: Arc<Config>,
-    search_param: String,
+    test_emailer_params: &SearchParamQuery,
 ) -> String {
-    let api_url = format!(
-        "https://{}/propertyExtendedSearch?location={}&home_type=Houses",
+    let mut api_url = format!(
+        "https://{}/propertyExtendedSearch?location={}",
         config.zillow_api.api_host,
-        encode(&search_param)
+        encode(&test_emailer_params.search_param)
     );
+
+    if test_emailer_params.max_price.is_some() {
+        api_url = format!(
+            "{}&maxPrice={}",
+            api_url,
+            test_emailer_params.max_price.unwrap()
+        );
+    }
+
+    if test_emailer_params.min_price.is_some() {
+        api_url = format!(
+            "{}&minPrice={}",
+            api_url,
+            test_emailer_params.min_price.unwrap()
+        );
+    }
 
     api_url
 }

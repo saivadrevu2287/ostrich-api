@@ -38,3 +38,5 @@ impl Error for OstrichError {
 pub fn map_ostrich_error(e: OstrichError) -> () {
     log::error!("{:?}", e);
 }
+
+impl warp::reject::Reject for OstrichError {}

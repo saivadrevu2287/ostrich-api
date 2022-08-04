@@ -55,7 +55,7 @@ pub async fn send_zillow_listings_email(
     body: &str,
 ) -> Result<(), OstrichError> {
     let from = config.email.from.clone();
-    let subject = "Zillow Results";
+    let subject = "Daily Ostrich Zillow Results";
     send_email(client, &from, to, subject, body).await
 }
 
@@ -66,7 +66,7 @@ pub async fn send_empty_zillow_listings_email(
     search_param: &str,
 ) -> Result<(), OstrichError> {
     let from = config.email.from.clone();
-    let subject = "Zillow Results Error";
-    let body = format!("<h1>-Your Daily Zillow Listings-</h1><p>Search Params: {} resulted in no listings!<br />Maybe alter your search parameters to something more braod?</p>", search_param);
+    let subject = "Daily Ostrich Zillow Results";
+    let body = format!("<h1>-Your Daily Zillow Listings-</h1><p>Search Params: {} resulted in no listings!<br />Maybe alter your search parameters to something more broad?</p>", search_param);
     send_email(client, &from, to, subject, &body).await
 }
