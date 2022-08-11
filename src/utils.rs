@@ -7,16 +7,6 @@ use sha2::Sha256;
 #[derive(Deserialize)]
 pub struct JwtPayload {
     pub sub: String,
-    email_verified: bool,
-    iss: String,
-    origin_jti: String,
-    aud: String,
-    event_id: String,
-    token_use: String,
-    auth_time: f64,
-    exp: f64,
-    iat: f64,
-    jti: String,
     pub email: String,
 }
 
