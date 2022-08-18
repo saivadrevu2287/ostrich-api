@@ -2,7 +2,8 @@ use crate::{
     handle_succcess_message,
     services::cognito::{
         self as cognito_service, reject_with_cognito_error, AuthenticationDetails, CognitoError,
-        ConfirmationCredentials, LoginCredentials, UsernameCredentials,
+        ConfirmForgotPasswordCredentials, ConfirmationCredentials, LoginCredentials,
+        UsernameCredentials,
     },
     Config,
 };
@@ -106,6 +107,49 @@ pub async fn resend_code(
     resend_results
         .map_err(handle_cognito_error)
         .map(|_| Ok(handle_succcess_message(format!("CONFIRMATION_RESENT"))))
+}
+
+pub async fn forgot_password(
+    username_credentials: UsernameCredentials,
+    config: Arc<Config>,
+    cognito: Arc<CognitoClient>,
+) -> Result<impl warp::Reply, warp::Rejection> {
+    log::info!("Forgot password from {}", username_credentials.username);
+    let resend_results = cognito_service::forgot_password(
+        cognito,
+        format!("{}", config.cognito.client_id),
+        format!("{}", config.cognito.secret_key),
+        username_credentials.username,
+    )
+    .await;
+
+    resend_results
+        .map_err(handle_cognito_error)
+        .map(|_| Ok(handle_succcess_message(format!("PASSWORD_RESET"))))
+}
+
+pub async fn confirm_forgot_password(
+    confirm_forgot_password_credentials: ConfirmForgotPasswordCredentials,
+    config: Arc<Config>,
+    cognito: Arc<CognitoClient>,
+) -> Result<impl warp::Reply, warp::Rejection> {
+    log::info!(
+        "Confirming forgot password from {}",
+        confirm_forgot_password_credentials.username
+    );
+    let resend_results = cognito_service::confirm_forgot_password(
+        cognito,
+        format!("{}", config.cognito.client_id),
+        format!("{}", config.cognito.secret_key),
+        confirm_forgot_password_credentials.username,
+        confirm_forgot_password_credentials.password,
+        confirm_forgot_password_credentials.code,
+    )
+    .await;
+
+    resend_results
+        .map_err(handle_cognito_error)
+        .map(|_| Ok(handle_succcess_message(format!("PASSWORD_RESET"))))
 }
 
 fn handle_cognito_error<T: std::fmt::Display>(error: SdkError<T>) -> warp::Rejection {

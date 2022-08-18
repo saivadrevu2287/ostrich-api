@@ -19,11 +19,18 @@ async fn main() {
     let auth = routes::auth::login(config.clone(), cognito.clone())
         .and_then(handlers::auth::login)
         .or(routes::auth::sign_up(config.clone(), cognito.clone())
-            .and_then(handlers::auth::sign_up)
-            .or(routes::auth::verify(config.clone(), cognito.clone())
-                .and_then(handlers::auth::verify)
-                .or(routes::auth::resend_code(config.clone(), cognito.clone())
-                    .and_then(handlers::auth::resend_code))))
+            .and_then(handlers::auth::sign_up))
+        .or(routes::auth::verify(config.clone(), cognito.clone()).and_then(handlers::auth::verify))
+        .or(routes::auth::resend_code(config.clone(), cognito.clone())
+            .and_then(handlers::auth::resend_code))
+        .or(
+            routes::auth::forgot_password(config.clone(), cognito.clone())
+                .and_then(handlers::auth::forgot_password),
+        )
+        .or(
+            routes::auth::confirm_forgot_password(config.clone(), cognito.clone())
+                .and_then(handlers::auth::confirm_forgot_password),
+        )
         .recover(handle_rejection);
 
     let with_control_origin = warp::reply::with::header("Access-Control-Allow-Origin", "*");

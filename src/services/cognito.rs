@@ -1,9 +1,15 @@
 use crate::utils::base64_hmac;
 use aws_config::meta::region::RegionProviderChain;
 use aws_sdk_cognitoidentityprovider::{
-    error::{ConfirmSignUpError, InitiateAuthError, ResendConfirmationCodeError, SignUpError},
+    error::{
+        ConfirmForgotPasswordError, ConfirmSignUpError, ForgotPasswordError, InitiateAuthError,
+        ResendConfirmationCodeError, SignUpError,
+    },
     model::{AttributeType, AuthFlowType, AuthenticationResultType},
-    output::{ConfirmSignUpOutput, InitiateAuthOutput, ResendConfirmationCodeOutput, SignUpOutput},
+    output::{
+        ConfirmForgotPasswordOutput, ConfirmSignUpOutput, ForgotPasswordOutput, InitiateAuthOutput,
+        ResendConfirmationCodeOutput, SignUpOutput,
+    },
     types::SdkError,
     Client, Region,
 };
@@ -47,6 +53,13 @@ pub struct ConfirmationCredentials {
 #[derive(Deserialize, Serialize)]
 pub struct UsernameCredentials {
     pub username: String,
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct ConfirmForgotPasswordCredentials {
+    pub username: String,
+    pub password: String,
+    pub code: String,
 }
 
 #[derive(Debug)]
@@ -171,4 +184,48 @@ pub async fn initiate(
         .await;
 
     auth
+}
+
+pub async fn forgot_password(
+    client: Arc<Client>,
+    client_id: String,
+    secret_key: String,
+    username: String,
+) -> Result<ForgotPasswordOutput, SdkError<ForgotPasswordError>> {
+    let message = format!("{}{}", username, client_id);
+    let secret_hash = base64_hmac(secret_key, message).expect("Could not accept secret key");
+
+    let forgot_password = client
+        .forgot_password()
+        .client_id(client_id)
+        .secret_hash(secret_hash)
+        .username(username)
+        .send()
+        .await;
+
+    forgot_password
+}
+
+pub async fn confirm_forgot_password(
+    client: Arc<Client>,
+    client_id: String,
+    secret_key: String,
+    username: String,
+    password: String,
+    code: String,
+) -> Result<ConfirmForgotPasswordOutput, SdkError<ConfirmForgotPasswordError>> {
+    let message = format!("{}{}", username, client_id);
+    let secret_hash = base64_hmac(secret_key, message).expect("Could not accept secret key");
+
+    let confirm_forgot_password = client
+        .confirm_forgot_password()
+        .client_id(client_id)
+        .secret_hash(secret_hash)
+        .username(username)
+        .password(password)
+        .confirmation_code(code)
+        .send()
+        .await;
+
+    confirm_forgot_password
 }
