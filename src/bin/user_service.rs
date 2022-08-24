@@ -34,7 +34,8 @@ async fn main() {
         routes::emailer::delete_emailer_by_authentication_id(db_conn.clone())
             .and_then(handlers::emailer::delete_emailer_by_id_and_authentication_id);
 
-    let user = routes::user::get_all_users(db_conn.clone()).and_then(handlers::user::get_all_users);
+    let user = routes::user::get_user_by_authentication_id(db_conn.clone())
+        .and_then(handlers::user::get_user_by_authentication_id);
 
     let emailer = get_all_emailers
         .or(post_emailer)

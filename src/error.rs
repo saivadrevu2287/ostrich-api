@@ -6,6 +6,7 @@ pub enum OstrichErrorType {
     ListingResultError,
     PropertyResultError,
     ApiError,
+    // UserRecordMissing
 }
 
 #[derive(Debug)]

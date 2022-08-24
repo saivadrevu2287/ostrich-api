@@ -1,5 +1,5 @@
 use crate::{
-    config::Config, handlers::emailer::SearchParamQuery, models::emailer::PostEmailer,
+    config::Config, models::emailer::PostEmailer, services::zillow::ZillowSearchParameters,
     utils::JwtPayload, with_config, with_db_conn, with_jwt, with_reqwest_client, DbConn,
 };
 use std::sync::Arc;
@@ -57,13 +57,13 @@ pub fn delete_emailer_by_authentication_id(
 pub fn test_emailer_params(
     config: Arc<Config>,
     client: Arc<reqwest::Client>,
-) -> BoxedFilter<(Arc<Config>, Arc<reqwest::Client>, SearchParamQuery)> {
+) -> BoxedFilter<(Arc<Config>, Arc<reqwest::Client>, ZillowSearchParameters)> {
     warp::get()
         .and(path_prefix())
         .and(warp::path("test-search-param"))
         .and(warp::path::end())
         .and(with_config(config))
         .and(with_reqwest_client(client))
-        .and(warp::query::<SearchParamQuery>())
+        .and(warp::query::<ZillowSearchParameters>())
         .boxed()
 }

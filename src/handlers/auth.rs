@@ -10,7 +10,6 @@ use crate::{
 use aws_sdk_cognitoidentityprovider::types::SdkError;
 use aws_sdk_cognitoidentityprovider::Client as CognitoClient;
 use std::sync::Arc;
-use warp::reject;
 
 pub async fn login(
     login_credentials: LoginCredentials,
@@ -152,11 +151,11 @@ pub async fn confirm_forgot_password(
         .map(|_| Ok(handle_succcess_message(format!("PASSWORD_RESET"))))
 }
 
+// this will either make a new error out of a cognito message
+// or provide a catch all message
 fn handle_cognito_error<T: std::fmt::Display>(error: SdkError<T>) -> warp::Rejection {
     match error {
-        SdkError::ServiceError { err, raw: _ } => {
-            reject::custom(CognitoError::new(format!("{}", err)))
-        }
+        SdkError::ServiceError { err, raw: _ } => reject_with_cognito_error(&format!("{}", err)),
         _ => reject_with_cognito_error("SERVER_ERROR"),
     }
 }

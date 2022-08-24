@@ -2,7 +2,6 @@ table! {
     emailers (id) {
         id -> Int4,
         search_param -> Varchar,
-        authentication_id -> Varchar,
         email -> Varchar,
         frequency -> Varchar,
         max_price -> Nullable<Float8>,
@@ -23,6 +22,31 @@ table! {
         updated_at -> Nullable<Timestamp>,
         deleted_at -> Nullable<Timestamp>,
         active -> Bool,
+        user_id -> Int4,
+    }
+}
+
+table! {
+    listing_data (id) {
+        id -> Int4,
+        user_id -> Int4,
+        street_address -> Nullable<Varchar>,
+        city -> Nullable<Varchar>,
+        state -> Nullable<Varchar>,
+        zipcode -> Nullable<Varchar>,
+        bedrooms -> Nullable<Int4>,
+        bathrooms -> Nullable<Int4>,
+        price -> Nullable<Float8>,
+        taxes -> Nullable<Float8>,
+        rent_estimate -> Nullable<Float8>,
+        time_on_zillow -> Nullable<Varchar>,
+        img_src -> Nullable<Varchar>,
+        url -> Nullable<Varchar>,
+        cash_on_cash -> Nullable<Float8>,
+        created_at -> Timestamp,
+        updated_at -> Nullable<Timestamp>,
+        deleted_at -> Nullable<Timestamp>,
+        active -> Bool,
     }
 }
 
@@ -36,7 +60,12 @@ table! {
         updated_at -> Nullable<Timestamp>,
         deleted_at -> Nullable<Timestamp>,
         active -> Bool,
+        user_tier -> Int4,
     }
 }
 
-allow_tables_to_appear_in_same_query!(emailers, users,);
+allow_tables_to_appear_in_same_query!(
+    emailers,
+    listing_data,
+    users,
+);

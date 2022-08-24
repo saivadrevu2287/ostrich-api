@@ -16,21 +16,31 @@ async fn main() {
     let cognito =
         Arc::new(services::cognito::get_cognito_client(config.clone().aws_region.clone()).await);
 
-    let auth = routes::auth::login(config.clone(), cognito.clone())
-        .and_then(handlers::auth::login)
-        .or(routes::auth::sign_up(config.clone(), cognito.clone())
-            .and_then(handlers::auth::sign_up))
-        .or(routes::auth::verify(config.clone(), cognito.clone()).and_then(handlers::auth::verify))
-        .or(routes::auth::resend_code(config.clone(), cognito.clone())
-            .and_then(handlers::auth::resend_code))
-        .or(
-            routes::auth::forgot_password(config.clone(), cognito.clone())
-                .and_then(handlers::auth::forgot_password),
-        )
-        .or(
-            routes::auth::confirm_forgot_password(config.clone(), cognito.clone())
-                .and_then(handlers::auth::confirm_forgot_password),
-        )
+    let login =
+        routes::auth::login(config.clone(), cognito.clone()).and_then(handlers::auth::login);
+
+    let sign_up =
+        routes::auth::sign_up(config.clone(), cognito.clone()).and_then(handlers::auth::sign_up);
+
+    let verify =
+        routes::auth::verify(config.clone(), cognito.clone()).and_then(handlers::auth::verify);
+
+    let resend_code = routes::auth::resend_code(config.clone(), cognito.clone())
+        .and_then(handlers::auth::resend_code);
+
+    let forgot_password = routes::auth::forgot_password(config.clone(), cognito.clone())
+        .and_then(handlers::auth::forgot_password);
+
+    let confirm_forgot_password =
+        routes::auth::confirm_forgot_password(config.clone(), cognito.clone())
+            .and_then(handlers::auth::confirm_forgot_password);
+
+    let auth = login
+        .or(sign_up)
+        .or(verify)
+        .or(resend_code)
+        .or(forgot_password)
+        .or(confirm_forgot_password)
         .recover(handle_rejection);
 
     let with_control_origin = warp::reply::with::header("Access-Control-Allow-Origin", "*");

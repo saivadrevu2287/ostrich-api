@@ -27,3 +27,4 @@ warp = { version = "0.3.2", features = ["tls"] }
 sendgrid-async = "0.1.0"
 thousands = "0.2.0"
 urlencoding = "2.1.0"
+tokio-stream = "0.1.9"

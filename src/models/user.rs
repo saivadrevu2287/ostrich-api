@@ -6,14 +6,15 @@ use serde::Serialize;
 
 #[derive(Queryable, Serialize)]
 pub struct User {
-    id: i32,
-    email: String,
-    billing_id: String,
-    authentication_id: String,
-    created_at: NaiveDateTime,
-    updated_at: Option<NaiveDateTime>,
-    deleted_at: Option<NaiveDateTime>,
-    active: bool,
+    pub id: i32,
+    pub email: String,
+    pub billing_id: String,
+    pub authentication_id: String,
+    pub created_at: NaiveDateTime,
+    pub updated_at: Option<NaiveDateTime>,
+    pub deleted_at: Option<NaiveDateTime>,
+    pub active: bool,
+    pub user_tier: i32,
 }
 
 #[derive(Insertable)]
@@ -26,6 +27,7 @@ pub struct NewUser {
     updated_at: Option<NaiveDateTime>,
     deleted_at: Option<NaiveDateTime>,
     active: bool,
+    user_tier: i32,
 }
 
 impl NewUser {
@@ -38,6 +40,7 @@ impl NewUser {
             updated_at: None,
             deleted_at: None,
             active: true,
+            user_tier: 0,
         }
     }
 
@@ -55,4 +58,12 @@ pub fn create(conn: &PgConnection, new_user: &NewUser) -> User {
 
 pub fn read(conn: &PgConnection) -> Vec<User> {
     users::table.load::<User>(conn).expect("Error loading user")
+}
+
+pub fn get_user_by_authentication_id(conn: &PgConnection, authentication_id: String) -> Vec<User> {
+    users::table
+        .filter(users::authentication_id.eq(authentication_id))
+        .filter(users::active.eq(true))
+        .load::<User>(conn)
+        .expect("Error loading user")
 }

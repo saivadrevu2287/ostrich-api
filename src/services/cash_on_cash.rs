@@ -1,4 +1,16 @@
-use crate::models::emailer::Emailer;
+pub struct CashOnCashCalculationParameters {
+    pub insurance: f64,
+    pub vacancy: f64,
+    pub property_management: f64,
+    pub capex: f64,
+    pub repairs: f64,
+    pub utilities: f64,
+    pub down_payment: f64,
+    pub closing_cost: f64,
+    pub loan_interest: f64,
+    pub loan_months: f64,
+    pub additional_monthly_expenses: f64,
+}
 
 // COC = [(Monthly Cash flow (MCF) x 12) / Initial Total Investment (ITI)] x 100
 fn cash_on_cash(monthly_cash_flow: f64, initial_total_investment: f64) -> f64 {
@@ -6,41 +18,48 @@ fn cash_on_cash(monthly_cash_flow: f64, initial_total_investment: f64) -> f64 {
 }
 
 // ITI = 29% of Purchase Price(PP)(Which comes from Zillow)
-fn initial_total_investment(emailer: &Emailer, purchase_price: f64) -> f64 {
-    ((emailer.down_payment / 100.0) + (emailer.closing_cost / 100.0)) * purchase_price
+fn initial_total_investment(
+    coc_params: &CashOnCashCalculationParameters,
+    purchase_price: f64,
+) -> f64 {
+    ((coc_params.down_payment / 100.0) + (coc_params.closing_cost / 100.0)) * purchase_price
 }
 
 // MCF = Monthly Gross Income(MGI)(comes from Zillow) - Monthly Expenses - Monthly Debt Service
 fn monthly_cash_flow(
-    emailer: &Emailer,
+    coc_params: &CashOnCashCalculationParameters,
     monthly_gross_income: f64,
     monthly_expenses: f64,
     monthly_debt_service: f64,
 ) -> f64 {
     monthly_gross_income
-        - monthly_gross_income * (emailer.vacancy / 100.0)
+        - monthly_gross_income * (coc_params.vacancy / 100.0)
         - monthly_expenses
         - monthly_debt_service
 }
 // Monthly Expenses = Taxes(comes from Zillow) + Insurance($60) + Vacancy(5% of MGI) + Property Management(4% of MGI)+ Capex(5% of MGI) + Repairs(5% of MGI) + Utilities($0)
-fn monthly_expenses(emailer: &Emailer, taxes: f64, monthly_gross_income: f64) -> f64 {
-    let income = monthly_gross_income - (emailer.vacancy / 100.0) * monthly_gross_income;
+fn monthly_expenses(
+    coc_params: &CashOnCashCalculationParameters,
+    taxes: f64,
+    monthly_gross_income: f64,
+) -> f64 {
+    let income = monthly_gross_income - (coc_params.vacancy / 100.0) * monthly_gross_income;
 
-    let insurance = emailer.insurance;
-    let property_management = (emailer.property_management / 100.0) * income;
-    let capex = (emailer.capex / 100.0) * income;
-    let repairs = (emailer.repairs / 100.0) * income;
-    let utilities = emailer.utilities;
+    let insurance = coc_params.insurance;
+    let property_management = (coc_params.property_management / 100.0) * income;
+    let capex = (coc_params.capex / 100.0) * income;
+    let repairs = (coc_params.repairs / 100.0) * income;
+    let utilities = coc_params.utilities;
 
     taxes + insurance + property_management + capex + repairs + utilities
 }
 
 // Monthly Debt Service = .61 % of Loan
-fn monthly_debt_service(emailer: &Emailer, loan: f64) -> f64 {
+fn monthly_debt_service(coc_params: &CashOnCashCalculationParameters, loan: f64) -> f64 {
     // i
-    let monthly_interest = (emailer.loan_interest / 100.0) / 12.0;
+    let monthly_interest = (coc_params.loan_interest / 100.0) / 12.0;
     // n
-    let months = emailer.loan_months;
+    let months = coc_params.loan_months;
     // (1 + i)^-n
     let exponent = f64::powf(1.0 / (1.0 + monthly_interest), months);
     // 1 - (1 + i)^-n
@@ -50,25 +69,25 @@ fn monthly_debt_service(emailer: &Emailer, loan: f64) -> f64 {
 }
 
 // Loan = 75% of Purchase Price(comes from Zillow)
-fn loan(emailer: &Emailer, purchase_price: f64) -> f64 {
-    (1.0 - (emailer.down_payment / 100.0)) * purchase_price
+fn loan(coc_params: &CashOnCashCalculationParameters, purchase_price: f64) -> f64 {
+    (1.0 - (coc_params.down_payment / 100.0)) * purchase_price
 }
 
 pub fn calculate_coc(
-    emailer: &Emailer,
+    coc_params: &CashOnCashCalculationParameters,
     purchase_price: f64,
     taxes: f64,
     monthly_gross_income: f64,
 ) -> f64 {
-    let loan = loan(emailer, purchase_price);
-    let monthly_debt_service = monthly_debt_service(emailer, loan);
-    let monthly_expenses = monthly_expenses(emailer, taxes, monthly_gross_income)
-        + emailer.additional_monthly_expenses;
+    let loan = loan(coc_params, purchase_price);
+    let monthly_debt_service = monthly_debt_service(coc_params, loan);
+    let monthly_expenses = monthly_expenses(coc_params, taxes, monthly_gross_income)
+        + coc_params.additional_monthly_expenses;
 
-    let initial_total_investment = initial_total_investment(emailer, purchase_price);
+    let initial_total_investment = initial_total_investment(coc_params, purchase_price);
 
     let monthly_cash_flow = monthly_cash_flow(
-        emailer,
+        coc_params,
         monthly_gross_income,
         monthly_expenses,
         monthly_debt_service,
@@ -81,11 +100,7 @@ pub fn calculate_coc(
 
 #[test]
 fn calculate_cash_on_cash() {
-    let emailer = Emailer {
-        id: 0,
-        authentication_id: String::from("abc"),
-        search_param: String::from("northampton%20county"),
-        frequency: String::from("daily"),
+    let coc_params = CashOnCashCalculationParameters {
         insurance: 60.0,
         vacancy: 5.0,
         property_management: 4.0,
@@ -97,29 +112,21 @@ fn calculate_cash_on_cash() {
         loan_interest: 4.0,
         loan_months: 240.0,
         additional_monthly_expenses: 0.0,
-        no_bedrooms: Some(3),
-        max_price: Some(200000.0),
-        min_price: Some(100000.0),
-        email: String::from("hgmaxwellking@gmail.com"),
-        created_at: crate::utils::now(),
-        updated_at: None,
-        deleted_at: None,
-        active: true,
     };
 
     let purchase_price = 290000.0;
     let taxes = 157.0;
     let monthly_gross_income = 2400.0;
 
-    let loan = loan(&emailer, purchase_price);
-    let monthly_debt_service = monthly_debt_service(&emailer, loan);
-    let monthly_expenses = monthly_expenses(&emailer, taxes, monthly_gross_income)
-        + &emailer.additional_monthly_expenses;
+    let loan = loan(&coc_params, purchase_price);
+    let monthly_debt_service = monthly_debt_service(&coc_params, loan);
+    let monthly_expenses = monthly_expenses(&coc_params, taxes, monthly_gross_income)
+        + &coc_params.additional_monthly_expenses;
 
-    let initial_total_investment = initial_total_investment(&emailer, purchase_price);
+    let initial_total_investment = initial_total_investment(&coc_params, purchase_price);
 
     let monthly_cash_flow = monthly_cash_flow(
-        &emailer,
+        &coc_params,
         monthly_gross_income,
         monthly_expenses,
         monthly_debt_service,
@@ -137,9 +144,9 @@ fn calculate_cash_on_cash() {
     assert_eq!(217500.0, loan);
 
     // i
-    let monthly_interest = (emailer.loan_interest / 100.0) / 12.0;
+    let monthly_interest = (coc_params.loan_interest / 100.0) / 12.0;
     // n
-    let months = emailer.loan_months;
+    let months = coc_params.loan_months;
     // (1 / (1 + i))^n
     let exponent = f64::powf(1.0 / (1.0 + monthly_interest), months);
     // 1 - (1 + i)^-n

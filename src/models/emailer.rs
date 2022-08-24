@@ -1,4 +1,8 @@
-use crate::{schema::emailers, utils::now};
+use crate::{
+    schema::emailers,
+    services::{cash_on_cash::CashOnCashCalculationParameters, zillow::ZillowSearchParameters},
+    utils::now,
+};
 
 use chrono::naive::NaiveDateTime;
 use diesel::prelude::*;
@@ -8,7 +12,6 @@ use serde::{Deserialize, Serialize};
 pub struct Emailer {
     pub id: i32,
     pub search_param: String,
-    pub authentication_id: String,
     pub email: String,
     pub frequency: String,
     pub max_price: Option<f64>,
@@ -29,13 +32,42 @@ pub struct Emailer {
     pub updated_at: Option<NaiveDateTime>,
     pub deleted_at: Option<NaiveDateTime>,
     pub active: bool,
+    pub user_id: i32,
+}
+
+impl Into<ZillowSearchParameters> for &Emailer {
+    fn into(self) -> ZillowSearchParameters {
+        ZillowSearchParameters {
+            search_param: self.search_param.clone(),
+            max_price: self.max_price.clone(),
+            min_price: self.min_price.clone(),
+            no_bedrooms: self.no_bedrooms.clone(),
+        }
+    }
+}
+
+impl Into<CashOnCashCalculationParameters> for &Emailer {
+    fn into(self) -> CashOnCashCalculationParameters {
+        CashOnCashCalculationParameters {
+            insurance: self.insurance,
+            vacancy: self.vacancy,
+            property_management: self.property_management,
+            capex: self.capex,
+            repairs: self.repairs,
+            utilities: self.utilities,
+            down_payment: self.down_payment,
+            closing_cost: self.closing_cost,
+            loan_interest: self.loan_interest,
+            loan_months: self.loan_months,
+            additional_monthly_expenses: self.additional_monthly_expenses,
+        }
+    }
 }
 
 #[derive(Insertable)]
 #[table_name = "emailers"]
 pub struct NewEmailer {
     search_param: String,
-    authentication_id: String,
     email: String,
     frequency: String,
     max_price: Option<f64>,
@@ -56,8 +88,10 @@ pub struct NewEmailer {
     updated_at: Option<NaiveDateTime>,
     deleted_at: Option<NaiveDateTime>,
     active: bool,
+    user_id: i32,
 }
 
+// this is a body that is accept when we are inserting an emailer over POST
 #[derive(Deserialize)]
 pub struct PostEmailer {
     search_param: String,
@@ -79,10 +113,10 @@ pub struct PostEmailer {
 }
 
 impl NewEmailer {
-    pub fn new(post_emailer: PostEmailer, authentication_id: String, email: String) -> Self {
+    pub fn new(post_emailer: PostEmailer, user_id: i32, email: String) -> Self {
         NewEmailer {
             search_param: post_emailer.search_param,
-            authentication_id,
+            user_id,
             email,
             frequency: post_emailer.frequency,
             max_price: post_emailer.max_price,
@@ -125,22 +159,18 @@ pub fn read(conn: &PgConnection) -> Vec<Emailer> {
         .expect("Error loading emailer")
 }
 
-pub fn read_by_authentication_id(conn: &PgConnection, authentication_id: String) -> Vec<Emailer> {
+pub fn read_by_user_id(conn: &PgConnection, user_id: i32) -> Vec<Emailer> {
     emailers::table
-        .filter(emailers::authentication_id.eq(authentication_id))
+        .filter(emailers::user_id.eq(user_id))
         .filter(emailers::active.eq(true))
         .load::<Emailer>(conn)
         .expect("Error loading emailer")
 }
 
-pub fn delete_by_id_and_authentication_id(
-    conn: &PgConnection,
-    id: i32,
-    authentication_id: String,
-) -> Vec<Emailer> {
+pub fn delete_by_id_and_user_id(conn: &PgConnection, id: i32, user_id: i32) -> Vec<Emailer> {
     diesel::update(emailers::table)
         .set(emailers::active.eq(false))
-        .filter(emailers::authentication_id.eq(authentication_id))
+        .filter(emailers::user_id.eq(user_id))
         .filter(emailers::id.eq(id))
         .load::<Emailer>(conn)
         .expect("Error soft deleting the email record")

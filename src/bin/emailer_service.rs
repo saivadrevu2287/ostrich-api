@@ -38,6 +38,7 @@ async fn main() -> Result<(), ()> {
 
         match zillow::get_listing_email_for_search_params(
             config.clone(),
+            db_conn.clone(),
             reqwest_client.clone(),
             &emailer,
             body,
