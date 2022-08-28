@@ -13,11 +13,11 @@ COPY ./src ./src
 RUN cargo build --release --bin emailer_service
 
 # Run image
-FROM debian:bookworm-slim
-RUN apt-get update \
-    && apt-get -y install libpq-dev \
-    && apt-get -y install libssl1.1 \
-    && apt-get install -y --no-install-recommends ca-certificates
+FROM debian:bullseye-slim
+RUN apt-get update
+RUN apt-get -y install libpq-dev
+RUN apt-get -y install libssl1.1
+RUN apt-get install -y --no-install-recommends ca-certificates
 
 
 # RUN apt-get update && apt-get install -y extra-runtime-dependencies && rm -rf /var/lib/apt/lists/*

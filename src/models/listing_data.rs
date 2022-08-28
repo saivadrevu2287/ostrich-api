@@ -11,6 +11,7 @@ use serde::Serialize;
 pub struct ListingData {
     pub id: i32,
     pub user_id: i32,
+    pub emailer_id: i32,
     pub street_address: Option<String>,
     pub city: Option<String>,
     pub state: Option<String>,
@@ -34,6 +35,7 @@ pub struct ListingData {
 #[table_name = "listing_data"]
 pub struct NewListingData {
     pub user_id: i32,
+    pub emailer_id: i32,
     pub street_address: Option<String>,
     pub city: Option<String>,
     pub state: Option<String>,
@@ -56,6 +58,7 @@ pub struct NewListingData {
 impl NewListingData {
     pub fn new(property: ZillowPropertySearchRoot, emailer: &Emailer) -> Self {
         let mut new_email_data = Self {
+            emailer_id: emailer.id,
             user_id: emailer.user_id,
             street_address: None,
             city: None,
@@ -154,9 +157,9 @@ impl NewListingData {
             specs,
             price,
             taxes,
-            cash_on_cash,
             rent_estimate,
             time_on_zillow,
+            cash_on_cash,
             img_src,
             url
         )

@@ -23,6 +23,8 @@ table! {
         deleted_at -> Nullable<Timestamp>,
         active -> Bool,
         user_id -> Int4,
+        no_bathrooms -> Nullable<Int4>,
+        notes -> Nullable<Varchar>,
     }
 }
 
@@ -30,6 +32,7 @@ table! {
     listing_data (id) {
         id -> Int4,
         user_id -> Int4,
+        emailer_id -> Int4,
         street_address -> Nullable<Varchar>,
         city -> Nullable<Varchar>,
         state -> Nullable<Varchar>,

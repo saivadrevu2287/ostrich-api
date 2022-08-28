@@ -17,6 +17,7 @@ pub struct ZillowSearchParameters {
     pub max_price: Option<f64>,
     pub min_price: Option<f64>,
     pub no_bedrooms: Option<i32>,
+    pub no_bathrooms: Option<i32>,
 }
 
 impl From<Error> for OstrichError {
@@ -248,7 +249,7 @@ pub async fn get_listing_email_for_search_params(
     delay: u64,
 ) -> Result<String, OstrichError> {
     let api_url =
-        get_zillow_listing_url_from_params(config.clone(), &emailer_record.into(), Some(1));
+        get_zillow_listing_url_from_params(config.clone(), &emailer_record.into(), None);
     let listing_results =
         get_zillow_listing_results(config.clone(), reqwest_client.clone(), api_url).await?;
 

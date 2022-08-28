@@ -2,6 +2,7 @@
 CREATE TABLE listing_data (
   id SERIAL PRIMARY KEY,
   user_id INTEGER NOT NULL,
+  emailer_id INTEGER NOT NULL,
   street_address VARCHAR,
   city VARCHAR,
   state VARCHAR,

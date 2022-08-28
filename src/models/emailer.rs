@@ -33,6 +33,8 @@ pub struct Emailer {
     pub deleted_at: Option<NaiveDateTime>,
     pub active: bool,
     pub user_id: i32,
+    pub no_bathrooms: Option<i32>,
+    pub notes: Option<String>
 }
 
 impl Into<ZillowSearchParameters> for &Emailer {
@@ -42,6 +44,7 @@ impl Into<ZillowSearchParameters> for &Emailer {
             max_price: self.max_price.clone(),
             min_price: self.min_price.clone(),
             no_bedrooms: self.no_bedrooms.clone(),
+            no_bathrooms: self.no_bathrooms.clone()
         }
     }
 }
@@ -89,6 +92,8 @@ pub struct NewEmailer {
     deleted_at: Option<NaiveDateTime>,
     active: bool,
     user_id: i32,
+    no_bathrooms: Option<i32>,
+    notes: Option<String>
 }
 
 // this is a body that is accept when we are inserting an emailer over POST
@@ -99,6 +104,7 @@ pub struct PostEmailer {
     max_price: Option<f64>,
     min_price: Option<f64>,
     no_bedrooms: Option<i32>,
+    no_bathrooms: Option<i32>,
     insurance: f64,
     vacancy: f64,
     property_management: f64,
@@ -110,6 +116,7 @@ pub struct PostEmailer {
     loan_interest: f64,
     loan_months: f64,
     additional_monthly_expenses: f64,
+    notes: Option<String>
 }
 
 impl NewEmailer {
@@ -122,6 +129,7 @@ impl NewEmailer {
             max_price: post_emailer.max_price,
             min_price: post_emailer.min_price,
             no_bedrooms: post_emailer.no_bedrooms,
+            no_bathrooms: post_emailer.no_bathrooms,
             insurance: post_emailer.insurance,
             vacancy: post_emailer.vacancy,
             property_management: post_emailer.property_management,
@@ -133,6 +141,7 @@ impl NewEmailer {
             loan_interest: post_emailer.loan_interest,
             loan_months: post_emailer.loan_months,
             additional_monthly_expenses: post_emailer.additional_monthly_expenses,
+            notes: post_emailer.notes,
             created_at: now(),
             updated_at: None,
             deleted_at: None,
