@@ -1,11 +1,13 @@
-use crate::{schema::listing_data, utils::now,
+use crate::{
     models::emailer::Emailer,
+    schema::listing_data,
     services::{cash_on_cash::calculate_coc, zillow::ZillowPropertySearchRoot},
+    utils::now,
 };
-use thousands::Separable;
 use chrono::naive::NaiveDateTime;
 use diesel::prelude::*;
 use serde::Serialize;
+use thousands::Separable;
 
 #[derive(Queryable, Serialize)]
 pub struct ListingData {
@@ -107,14 +109,15 @@ impl NewListingData {
     }
 
     pub fn to_email(&self) -> String {
-        let address = 
-                format!(
-                    "{} {}, {} {}",
-                    self.street_address.clone().map_or(String::from("Missing"), |x| x),
-                    self.city.clone().map_or(String::from("Missing"), |x| x),
-                    self.state.clone().map_or(String::from("Missing"), |x| x),
-                    self.zipcode.clone().map_or(String::from("Missing"), |x| x)
-                );
+        let address = format!(
+            "{} {}, {} {}",
+            self.street_address
+                .clone()
+                .map_or(String::from("Missing"), |x| x),
+            self.city.clone().map_or(String::from("Missing"), |x| x),
+            self.state.clone().map_or(String::from("Missing"), |x| x),
+            self.zipcode.clone().map_or(String::from("Missing"), |x| x)
+        );
 
         let specs = format!(
             "Bedrooms: {} | Bathrooms: {}",
@@ -128,7 +131,10 @@ impl NewListingData {
         let rent_estimate = self
             .rent_estimate
             .map_or(String::from("Missing"), |x| x.separate_with_commas());
-        let time_on_zillow = self.time_on_zillow.clone().map_or(String::from("Missing"), |x| x);
+        let time_on_zillow = self
+            .time_on_zillow
+            .clone()
+            .map_or(String::from("Missing"), |x| x);
         let img_src = self.img_src.clone().map_or(String::from("Missing"), |x| x);
         let url = self.url.clone().map_or(String::from("Missing"), |x| x);
         let taxes = self
@@ -140,7 +146,7 @@ impl NewListingData {
         } else {
             String::from("<a href=\"https://chrome.google.com/webstore/detail/ostrich/aicgkflmidjkbcenllnnlbnfnmicpmgo\">Use Ostrich Plugin to run this calculation!</a>")
         };
-        
+
         format!(
             "
             <h2>{}</h2>
@@ -153,15 +159,7 @@ impl NewListingData {
             <img src=\"{}\">
             <a href=\"https://www.zillow.com{}\">Check it out!</a>
             ",
-            address,
-            specs,
-            price,
-            taxes,
-            rent_estimate,
-            time_on_zillow,
-            cash_on_cash,
-            img_src,
-            url
+            address, specs, price, taxes, rent_estimate, time_on_zillow, cash_on_cash, img_src, url
         )
     }
 }
@@ -174,5 +172,7 @@ pub fn create(conn: &PgConnection, new_listing_data: &NewListingData) -> Listing
 }
 
 pub fn read(conn: &PgConnection) -> Vec<ListingData> {
-    listing_data::table.load::<ListingData>(conn).expect("Error loading listing_data")
+    listing_data::table
+        .load::<ListingData>(conn)
+        .expect("Error loading listing_data")
 }

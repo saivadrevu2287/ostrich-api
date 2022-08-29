@@ -1,14 +1,14 @@
 use crate::{
     config::Config,
+    db_conn::DbConn,
     error::{OstrichError, OstrichErrorType},
     models::{emailer::Emailer, listing_data::NewListingData},
-    db_conn::DbConn
 };
-use tokio_stream::{self as stream, StreamExt};
 use reqwest::Error;
 use serde_derive::Deserialize;
 use std::sync::Arc;
 use tokio::time::{sleep, Duration};
+use tokio_stream::{self as stream, StreamExt};
 use urlencoding::encode;
 
 #[derive(Deserialize)]
@@ -212,7 +212,12 @@ pub async fn get_zillow_property_results_by_zpid(
     config: Arc<Config>,
     reqwest_client: Arc<reqwest::Client>,
     zpid: String,
+    delay: Option<u64>,
 ) -> Result<ZillowPropertySearchRoot, OstrichError> {
+    if delay.is_some() {
+        sleep(Duration::from_millis(delay.unwrap())).await;
+    }
+
     let api_url = format!(
         "https://{}/property?zpid={}",
         config.zillow_api.api_host, zpid
@@ -247,9 +252,10 @@ pub async fn get_listing_email_for_search_params(
     emailer_record: &Emailer,
     body: String,
     delay: u64,
+    days_on_market: Option<i32>,
 ) -> Result<String, OstrichError> {
     let api_url =
-        get_zillow_listing_url_from_params(config.clone(), &emailer_record.into(), None);
+        get_zillow_listing_url_from_params(config.clone(), &emailer_record.into(), days_on_market);
     let listing_results =
         get_zillow_listing_results(config.clone(), reqwest_client.clone(), api_url).await?;
 
@@ -259,16 +265,21 @@ pub async fn get_listing_email_for_search_params(
         .props
         .into_iter()
         .map(|listing| listing.zpid)
-        .collect::<Vec<Option<String>>>();
+        .filter(|x| x.is_some())
+        .map(|x| x.unwrap())
+        .collect::<Vec<String>>();
 
     log::info!("Found {} properties", zpids.len());
 
     let email_body = stream::iter(zpids)
-        .filter(|x| x.is_some())
-        .map(|x| x.unwrap())
-        .then(|zpid|
-            get_zillow_property_results_by_zpid(config.clone(), reqwest_client.clone(), zpid)
-        )
+        .then(|zpid| {
+            get_zillow_property_results_by_zpid(
+                config.clone(),
+                reqwest_client.clone(),
+                zpid,
+                Some(700),
+            )
+        })
         .filter(|x| {
             if x.is_ok() {
                 log::debug!("{:?}", x);
@@ -279,17 +290,20 @@ pub async fn get_listing_email_for_search_params(
             }
         })
         .map(|x| x.unwrap())
-        .map(|property_result| {
-            NewListingData::new(property_result, emailer_record)
-        })
+        .map(|property_result| NewListingData::new(property_result, emailer_record))
         .map(|zillow_email_data| {
             zillow_email_data.insert(&db_conn.get_conn());
             let formatted_property_string = zillow_email_data.to_email();
             log::debug!("{:?}", formatted_property_string);
             formatted_property_string
         })
-        .fold(body, |acc, listing_data| format!("{}<div style=\"border-top:1px solid black;\">{}</div>", acc, listing_data))
+        .fold(body, |acc, listing_data| {
+            format!(
+                "{}<div style=\"border-top:1px solid black;\">{}</div>",
+                acc, listing_data
+            )
+        })
         .await;
-    
+
     Ok(email_body)
 }

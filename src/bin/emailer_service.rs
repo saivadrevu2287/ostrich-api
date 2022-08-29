@@ -43,6 +43,7 @@ async fn main() -> Result<(), ()> {
             &emailer,
             body,
             delay,
+            Some(1), // this means 1 day on market
         )
         .await
         {

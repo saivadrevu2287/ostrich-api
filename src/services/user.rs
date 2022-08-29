@@ -1,18 +1,18 @@
-use crate::config::Config;
-use reqwest::Error;
+use crate::{
+    models::user::{self, User},
+    utils::JwtPayload,
+    DbConn,
+};
 use std::sync::Arc;
 
-pub async fn ping_user_service(config: Arc<Config>) -> Result<(), Error> {
-    let user_service_url = format!("http://{}/health", config.user_service_url.clone());
-    log::info!("Pinging {}", user_service_url);
-    let response = reqwest::Client::new()
-        .get(user_service_url)
-        .header("X-RapidAPI-Host", config.zillow_api.api_host.clone())
-        .header("X-RapidAPI-Key", config.zillow_api.api_key.clone())
-        .send()
-        .await?
-        .text()
-        .await?;
-
-    Ok(())
+pub async fn with_user(
+    jwt: JwtPayload,
+    db_conn: Arc<DbConn>,
+) -> Result<(JwtPayload, Arc<DbConn>, User), warp::Rejection> {
+    let conn = db_conn.get_conn();
+    let user = user::get_user_by_authentication_id(&conn, jwt.sub.clone())
+        .first()
+        .cloned()
+        .ok_or(warp::reject::not_found())?;
+    Ok((jwt, db_conn, user))
 }

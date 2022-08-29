@@ -4,7 +4,7 @@ use chrono::naive::NaiveDateTime;
 use diesel::prelude::*;
 use serde::Serialize;
 
-#[derive(Queryable, Serialize)]
+#[derive(Queryable, Serialize, Clone)]
 pub struct User {
     pub id: i32,
     pub email: String,

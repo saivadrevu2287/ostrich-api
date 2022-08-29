@@ -51,14 +51,6 @@ pub fn with_reqwest_client(
     warp::any().map(move || client.clone()).boxed()
 }
 
-pub async fn get_user_service_health(config: Arc<Config>) -> Result<impl Reply, Infallible> {
-    match services::user::ping_user_service(config).await {
-        Ok(_) => log::info!("Healthy user service"),
-        Err(e) => log::error!("Error! user service, {:?}", e),
-    }
-    Ok(warp::reply())
-}
-
 // An API error serializable to JSON.
 #[derive(Serialize)]
 pub struct ErrorMessage {
@@ -75,6 +67,10 @@ pub struct SuccessMessage {
 #[derive(Debug)]
 struct BadJwt;
 impl warp::reject::Reject for BadJwt {}
+
+#[derive(Debug)]
+struct Forbidden;
+impl warp::reject::Reject for Forbidden {}
 
 // This function receives a `Rejection` and tries to return a custom
 // value, otherwise simply passes the rejection along.
@@ -93,7 +89,10 @@ pub async fn handle_rejection(err: Rejection) -> Result<impl Reply, Infallible> 
         message = e.details.clone();
     } else if let Some(_) = err.find::<BadJwt>() {
         code = StatusCode::BAD_REQUEST;
-        message = String::from("JWT was not well formed!");
+        message = String::from("BAD_JWT");
+    } else if let Some(_) = err.find::<Forbidden>() {
+        code = StatusCode::FORBIDDEN;
+        message = String::from("FORBIDDEN");
     } else if let Some(e) = err.find::<BodyDeserializeError>() {
         // This error happens if the body could not be deserialized correctly
         // We can use the cause to analyze the error and customize the error message

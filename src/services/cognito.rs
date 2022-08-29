@@ -17,6 +17,7 @@ use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, sync::Arc};
 use warp::reject;
 
+// the token data we send back upon login
 #[derive(Serialize)]
 pub struct AuthenticationDetails {
     pub access_token: Option<String>,
@@ -26,6 +27,7 @@ pub struct AuthenticationDetails {
     pub id_token: Option<String>,
 }
 
+// convert the aws type to our type
 impl From<AuthenticationResultType> for AuthenticationDetails {
     fn from(a: AuthenticationResultType) -> Self {
         Self {
@@ -38,23 +40,27 @@ impl From<AuthenticationResultType> for AuthenticationDetails {
     }
 }
 
+// post body when logging in
 #[derive(Deserialize)]
 pub struct LoginCredentials {
     pub username: String,
     pub password: String,
 }
 
+// post body when confirming your email
 #[derive(Deserialize)]
 pub struct ConfirmationCredentials {
     pub username: String,
     pub code: String,
 }
 
+// post body when running forgot password
 #[derive(Deserialize, Serialize)]
 pub struct UsernameCredentials {
     pub username: String,
 }
 
+// post body when confirming your forgotten password
 #[derive(Deserialize, Serialize)]
 pub struct ConfirmForgotPasswordCredentials {
     pub username: String,
@@ -62,16 +68,18 @@ pub struct ConfirmForgotPasswordCredentials {
     pub code: String,
 }
 
+// error type that we send back to user
 #[derive(Debug)]
 pub struct CognitoError {
     pub cause: String,
 }
 
+impl reject::Reject for CognitoError {}
+
+// wrapper to send back cognito errors to our user
 pub fn reject_with_cognito_error(message: &str) -> warp::Rejection {
     reject::custom(CognitoError::new(String::from(message)))
 }
-
-impl reject::Reject for CognitoError {}
 
 impl CognitoError {
     pub fn new(cause: String) -> Self {

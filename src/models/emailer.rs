@@ -8,7 +8,7 @@ use chrono::naive::NaiveDateTime;
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Queryable, Serialize)]
+#[derive(Queryable, Serialize, Identifiable)]
 pub struct Emailer {
     pub id: i32,
     pub search_param: String,
@@ -34,7 +34,7 @@ pub struct Emailer {
     pub active: bool,
     pub user_id: i32,
     pub no_bathrooms: Option<i32>,
-    pub notes: Option<String>
+    pub notes: Option<String>,
 }
 
 impl Into<ZillowSearchParameters> for &Emailer {
@@ -44,7 +44,7 @@ impl Into<ZillowSearchParameters> for &Emailer {
             max_price: self.max_price.clone(),
             min_price: self.min_price.clone(),
             no_bedrooms: self.no_bedrooms.clone(),
-            no_bathrooms: self.no_bathrooms.clone()
+            no_bathrooms: self.no_bathrooms.clone(),
         }
     }
 }
@@ -93,7 +93,32 @@ pub struct NewEmailer {
     active: bool,
     user_id: i32,
     no_bathrooms: Option<i32>,
-    notes: Option<String>
+    notes: Option<String>,
+}
+
+#[derive(AsChangeset, Deserialize)]
+#[table_name = "emailers"]
+pub struct PutEmailer {
+    id: i32,
+    search_param: String,
+    frequency: String,
+    max_price: Option<f64>,
+    min_price: Option<f64>,
+    no_bedrooms: Option<i32>,
+    insurance: f64,
+    vacancy: f64,
+    property_management: f64,
+    capex: f64,
+    repairs: f64,
+    utilities: f64,
+    down_payment: f64,
+    closing_cost: f64,
+    loan_interest: f64,
+    loan_months: f64,
+    additional_monthly_expenses: f64,
+    updated_at: Option<NaiveDateTime>,
+    no_bathrooms: Option<i32>,
+    notes: Option<String>,
 }
 
 // this is a body that is accept when we are inserting an emailer over POST
@@ -116,7 +141,7 @@ pub struct PostEmailer {
     loan_interest: f64,
     loan_months: f64,
     additional_monthly_expenses: f64,
-    notes: Option<String>
+    notes: Option<String>,
 }
 
 impl NewEmailer {
@@ -168,6 +193,17 @@ pub fn read(conn: &PgConnection) -> Vec<Emailer> {
         .expect("Error loading emailer")
 }
 
+pub fn update_emailer(conn: &PgConnection, mut updated_emailer: PutEmailer, user_id: i32) -> usize {
+    updated_emailer.updated_at = Some(now());
+    diesel::update(emailers::table)
+        .filter(emailers::id.eq(updated_emailer.id))
+        .filter(emailers::user_id.eq(user_id))
+        .filter(emailers::active.eq(true))
+        .set(&updated_emailer)
+        .execute(conn)
+        .expect("Error updating emailer")
+}
+
 pub fn read_by_user_id(conn: &PgConnection, user_id: i32) -> Vec<Emailer> {
     emailers::table
         .filter(emailers::user_id.eq(user_id))
@@ -178,7 +214,7 @@ pub fn read_by_user_id(conn: &PgConnection, user_id: i32) -> Vec<Emailer> {
 
 pub fn delete_by_id_and_user_id(conn: &PgConnection, id: i32, user_id: i32) -> Vec<Emailer> {
     diesel::update(emailers::table)
-        .set(emailers::active.eq(false))
+        .set((emailers::active.eq(false), emailers::deleted_at.eq(now())))
         .filter(emailers::user_id.eq(user_id))
         .filter(emailers::id.eq(id))
         .load::<Emailer>(conn)

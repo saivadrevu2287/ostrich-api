@@ -34,6 +34,9 @@ async fn main() {
         routes::emailer::delete_emailer_by_authentication_id(db_conn.clone())
             .and_then(handlers::emailer::delete_emailer_by_id_and_authentication_id);
 
+    let update_emailer = routes::emailer::update_emailer(db_conn.clone())
+        .and_then(handlers::emailer::update_emailer);
+
     let user = routes::user::get_user_by_authentication_id(db_conn.clone())
         .and_then(handlers::user::get_user_by_authentication_id);
 
@@ -41,7 +44,8 @@ async fn main() {
         .or(post_emailer)
         .or(test_emailer_params)
         .or(get_emailer_by_authentication_id)
-        .or(delete_emailer_by_authentication_id);
+        .or(delete_emailer_by_authentication_id)
+        .or(update_emailer);
 
     let health = warp::get().and(warp::path("health")).map(|| warp::reply());
 

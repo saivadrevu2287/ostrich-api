@@ -1,8 +1,5 @@
 use env_logger::Env;
-use ostrich_api::{
-    config::Config, get_user_service_health, handle_rejection, handlers, routes, services,
-    with_config,
-};
+use ostrich_api::{config::Config, handle_rejection, handlers, routes, services, with_config};
 use std::{net::SocketAddr, sync::Arc};
 use warp::Filter;
 
@@ -47,10 +44,9 @@ async fn main() {
     let with_content_allow =
         warp::reply::with::header("Access-Control-Allow-Headers", "Content-Type");
 
-    let end = warp::get()
-        .and(warp::path("health"))
-        .and(with_config(config.clone()))
-        .and_then(get_user_service_health)
+    let health = warp::get().and(warp::path("health")).map(|| warp::reply());
+
+    let end = health
         .or(auth)
         .with(with_control_origin)
         .with(with_content_allow)

@@ -28,7 +28,7 @@ async fn main() -> Result<(), ()> {
         id: 0,
         notes: Some(String::from("Title")),
         user_id: 0,
-        search_param: String::from("Manhattan"),
+        search_param: String::from("Astoria, NY"),
         frequency: String::from("daily"),
         insurance: 60.0,
         vacancy: 5.0,
@@ -44,12 +44,12 @@ async fn main() -> Result<(), ()> {
         no_bedrooms: Some(3),
         max_price: None,
         min_price: None,
-        email: String::from("jeffbayone65@gmail.com"),
+        email: String::from("hgmaxwellking@gmail.com"),
         created_at: utils::now(),
         updated_at: None,
         deleted_at: None,
         active: true,
-        no_bathrooms: Some(1)
+        no_bathrooms: Some(1),
     };
 
     let search_param = &emailer.search_param;
@@ -69,6 +69,7 @@ async fn main() -> Result<(), ()> {
         &emailer,
         body,
         delay,
+        None,
     )
     .await
     {
@@ -91,10 +92,9 @@ async fn main() -> Result<(), ()> {
             }
         }
         Ok(body) => {
-            let _ =
-                email::send_zillow_listings_email(&email_client, config.clone(), &to, &body)
-                    .await
-                    .map_err(map_ostrich_error);
+            let _ = email::send_zillow_listings_email(&email_client, config.clone(), &to, &body)
+                .await
+                .map_err(map_ostrich_error);
         }
     }
 
