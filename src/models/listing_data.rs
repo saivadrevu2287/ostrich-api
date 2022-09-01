@@ -59,6 +59,11 @@ pub struct NewListingData {
 
 impl NewListingData {
     pub fn new(property: ZillowPropertySearchRoot, emailer: &Emailer) -> Self {
+        let taxes = match property.resoFacts {
+            Some(reso_facts) => reso_facts.taxAnnualAmount.map(|ammount| ammount as f64),
+            None => None,
+        };
+
         let mut new_email_data = Self {
             emailer_id: emailer.id,
             user_id: emailer.user_id,
@@ -69,7 +74,7 @@ impl NewListingData {
             bedrooms: property.bedrooms.map(|bedrooms| bedrooms as i32),
             bathrooms: property.bathrooms.map(|bathrooms| bathrooms as i32),
             price: property.price,
-            taxes: property.propertyTaxRate,
+            taxes: taxes,
             rent_estimate: property.rentZestimate,
             time_on_zillow: property.timeOnZillow,
             img_src: property.imgSrc,
@@ -90,12 +95,12 @@ impl NewListingData {
 
         if property.price.is_some()
             && property.rentZestimate.is_some()
-            && property.propertyTaxRate.is_some()
+            && taxes.is_some()
         {
             let coc = calculate_coc(
                 &emailer.into(),
                 property.price.unwrap(),
-                property.propertyTaxRate.unwrap(),
+                taxes.unwrap(),
                 property.rentZestimate.unwrap(),
             );
             new_email_data.cash_on_cash = Some(coc);

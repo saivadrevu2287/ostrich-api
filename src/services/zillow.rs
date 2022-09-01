@@ -153,6 +153,7 @@ pub struct ZillowPropertySearchRoot {
     pub zestimateLowPercent: Option<String>,
     pub isListedByOwner: Option<bool>,
     pub propertyTypeDimension: Option<String>,
+    pub resoFacts: Option<ResoFacts>,
     pub streetAddress: Option<String>,
     pub county: Option<String>,
     pub stateId: Option<i64>,
@@ -197,6 +198,11 @@ pub struct MortgageRates {
     arm5Rate: Option<f64>,
     fifteenYearFixedRate: Option<f64>,
     thirtyYearFixedRate: Option<f64>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct ResoFacts {
+    pub taxAnnualAmount: Option<i64>
 }
 
 #[derive(Deserialize, Debug)]
@@ -277,7 +283,7 @@ pub async fn get_listing_email_for_search_params(
                 config.clone(),
                 reqwest_client.clone(),
                 zpid,
-                Some(700),
+                Some(delay),
             )
         })
         .filter(|x| {
