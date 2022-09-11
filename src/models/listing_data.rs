@@ -2,12 +2,11 @@ use crate::{
     models::emailer::Emailer,
     schema::listing_data,
     services::{cash_on_cash::calculate_coc, zillow::ZillowPropertySearchRoot},
-    utils::now,
+    utils::{format_optional_float, format_optional_string, now},
 };
 use chrono::naive::NaiveDateTime;
 use diesel::prelude::*;
 use serde::Serialize;
-use thousands::Separable;
 
 #[derive(Queryable, Serialize)]
 pub struct ListingData {
@@ -59,9 +58,13 @@ pub struct NewListingData {
 
 impl NewListingData {
     pub fn new(property: ZillowPropertySearchRoot, emailer: &Emailer) -> Self {
-        let taxes = match property.resoFacts {
-            Some(reso_facts) => reso_facts.taxAnnualAmount.map(|ammount| ammount as f64),
-            None => None,
+        let taxes = if property.propertyTaxRate.is_some()
+            && property.price.is_some()
+            && property.propertyTaxRate.unwrap() != 0.0
+        {
+            Some((property.propertyTaxRate.unwrap() * property.price.unwrap()) / 1200.0)
+        } else {
+            None
         };
 
         let mut new_email_data = Self {
@@ -93,10 +96,7 @@ impl NewListingData {
             new_email_data.zipcode = address.zipcode;
         };
 
-        if property.price.is_some()
-            && property.rentZestimate.is_some()
-            && taxes.is_some()
-        {
+        if property.price.is_some() && property.rentZestimate.is_some() && taxes.is_some() {
             let coc = calculate_coc(
                 &emailer.into(),
                 property.price.unwrap(),
@@ -116,12 +116,10 @@ impl NewListingData {
     pub fn to_email(&self) -> String {
         let address = format!(
             "{} {}, {} {}",
-            self.street_address
-                .clone()
-                .map_or(String::from("Missing"), |x| x),
-            self.city.clone().map_or(String::from("Missing"), |x| x),
-            self.state.clone().map_or(String::from("Missing"), |x| x),
-            self.zipcode.clone().map_or(String::from("Missing"), |x| x)
+            format_optional_string(self.street_address.clone()),
+            format_optional_string(self.city.clone()),
+            format_optional_string(self.state.clone()),
+            format_optional_string(self.zipcode.clone())
         );
 
         let specs = format!(
@@ -130,21 +128,14 @@ impl NewListingData {
             self.bathrooms.map_or(0, |x| x)
         );
 
-        let price = self
-            .price
-            .map_or(String::from("Missing"), |x| x.separate_with_commas());
-        let rent_estimate = self
-            .rent_estimate
-            .map_or(String::from("Missing"), |x| x.separate_with_commas());
-        let time_on_zillow = self
-            .time_on_zillow
-            .clone()
-            .map_or(String::from("Missing"), |x| x);
-        let img_src = self.img_src.clone().map_or(String::from("Missing"), |x| x);
-        let url = self.url.clone().map_or(String::from("Missing"), |x| x);
-        let taxes = self
-            .taxes
-            .map_or(String::from("Missing"), |x| x.separate_with_commas());
+        let price = format_optional_float(self.price);
+        let rent_estimate = format_optional_float(self.rent_estimate);
+        let time_on_zillow = format_optional_string(self.time_on_zillow.clone());
+
+        let img_src = format_optional_string(self.img_src.clone());
+        let url = format_optional_string(self.url.clone());
+
+        let taxes = format_optional_float(self.taxes);
 
         let cash_on_cash = if self.cash_on_cash.is_some() {
             format!("{:.2}%", self.cash_on_cash.unwrap())
@@ -156,9 +147,9 @@ impl NewListingData {
             "
             <h2>{}</h2>
             <h4>{}</h4>
-            <h4>Price: ${}</h4>
-            <h4>Taxes: ${}</h4>
-            <h4>Renting estimated: ${}</h4>
+            <h4>Price: {}</h4>
+            <h4>Taxes: {}</h4>
+            <h4>Estimated Rent: {}</h4>
             <h4>Days on Market: {}</h4>
             <h4>Cash On Cash: {}</h4>
             <img src=\"{}\">

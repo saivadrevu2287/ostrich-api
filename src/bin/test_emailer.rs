@@ -55,10 +55,7 @@ async fn main() -> Result<(), ()> {
     let search_param = &emailer.search_param;
     let to = &emailer.email;
 
-    let body = format!(
-        "<h1>-Your Daily Zillow Listings-</h1><p>Search Params: {}</p>",
-        search_param
-    );
+    let body = email::get_ostrich_email_body(&emailer);
 
     log::info!("Running search on {} for {}", search_param, to);
 
@@ -92,9 +89,15 @@ async fn main() -> Result<(), ()> {
             }
         }
         Ok(body) => {
-            let _ = email::send_zillow_listings_email(&email_client, config.clone(), &to, &body)
-                .await
-                .map_err(map_ostrich_error);
+            let _ = email::send_zillow_listings_email(
+                &email_client,
+                config.clone(),
+                &to,
+                &body,
+                search_param,
+            )
+            .await
+            .map_err(map_ostrich_error);
         }
     }
 

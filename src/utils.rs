@@ -3,6 +3,7 @@ use chrono::prelude::*;
 use hmac::{Hmac, Mac};
 use serde::Deserialize;
 use sha2::Sha256;
+use thousands::Separable;
 
 #[derive(Deserialize)]
 pub struct JwtPayload {
@@ -33,6 +34,16 @@ pub fn decode_jwt(token: &str) -> DynResult<JwtPayload> {
 pub fn decode_bearer(header: &str) -> DynResult<JwtPayload> {
     let parts = header.split(" ").collect::<Vec<&str>>();
     decode_jwt(parts[1])
+}
+
+pub fn format_optional_float(x: Option<f64>) -> String {
+    x.map_or(String::from("N/A"), |x| {
+        format!("${}", x.separate_with_commas())
+    })
+}
+
+pub fn format_optional_string(x: Option<String>) -> String {
+    x.map_or(String::from("N/A"), |x| x)
 }
 
 #[test]

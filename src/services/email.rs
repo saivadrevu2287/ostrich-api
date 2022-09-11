@@ -1,6 +1,8 @@
 use crate::{
     config::Config,
     error::{OstrichError, OstrichErrorType},
+    models::emailer::Emailer,
+    utils::{format_optional_float, format_optional_string},
 };
 use sendgrid_async::{Address, Client, Content, Message, Personalization};
 use std::sync::Arc;
@@ -53,10 +55,11 @@ pub async fn send_zillow_listings_email(
     config: Arc<Config>,
     to: &str,
     body: &str,
+    search_param: &str,
 ) -> Result<(), OstrichError> {
     let from = config.email.from.clone();
-    let subject = "Daily Ostrich Zillow Results";
-    send_email(client, &from, to, subject, body).await
+    let subject = format!("New Ostrich Listings: {}", search_param);
+    send_email(client, &from, to, &subject, body).await
 }
 
 pub async fn send_empty_zillow_listings_email(
@@ -66,7 +69,16 @@ pub async fn send_empty_zillow_listings_email(
     search_param: &str,
 ) -> Result<(), OstrichError> {
     let from = config.email.from.clone();
-    let subject = "Daily Ostrich Zillow Results";
-    let body = format!("<h1>-Your Daily Zillow Listings-</h1><p>Search Params: {} resulted in no listings!<br />Maybe alter your search parameters to something more broad?</p>", search_param);
-    send_email(client, &from, to, subject, &body).await
+    let subject = format!("New Ostrich Listings: {}", search_param);
+    let body = "Looks like not much showed on the market yesterday!";
+    send_email(client, &from, to, &subject, body).await
+}
+
+pub fn get_ostrich_email_body(emailer: &Emailer) -> String {
+    format!(
+        "<h1>-Your Daily Zillow Listings-</h1><p>Market: {}</p><p>Price Range: {}-{}</p>",
+        format_optional_string(emailer.notes.clone()),
+        format_optional_float(emailer.min_price),
+        format_optional_float(emailer.max_price),
+    )
 }

@@ -129,6 +129,22 @@ pub fn get_zillow_listing_url_from_params(
         );
     }
 
+    if zillow_search_params.no_bathrooms.is_some() {
+        api_url = format!(
+            "{}&bathsMin={}",
+            api_url,
+            zillow_search_params.no_bathrooms.unwrap()
+        );
+    }
+
+    if zillow_search_params.no_bedrooms.is_some() {
+        api_url = format!(
+            "{}&bedsMin={}",
+            api_url,
+            zillow_search_params.no_bedrooms.unwrap()
+        );
+    }
+
     if days_on_market.is_some() {
         api_url = format!("{}&daysOn={}", api_url, days_on_market.unwrap());
     }
@@ -202,7 +218,7 @@ pub struct MortgageRates {
 
 #[derive(Deserialize, Debug)]
 pub struct ResoFacts {
-    pub taxAnnualAmount: Option<i64>
+    pub taxAnnualAmount: Option<i64>,
 }
 
 #[derive(Deserialize, Debug)]
