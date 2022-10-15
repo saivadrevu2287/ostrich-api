@@ -67,3 +67,11 @@ pub fn get_user_by_authentication_id(conn: &PgConnection, authentication_id: Str
         .load::<User>(conn)
         .expect("Error loading user")
 }
+
+pub fn update_user(conn: &PgConnection, email: String, billing_id: String) -> usize {
+    diesel::update(users::table)
+        .filter(users::email.eq(email))
+        .set(users::billing_id.eq(billing_id))
+        .execute(conn)
+        .expect("Error updating user")
+}

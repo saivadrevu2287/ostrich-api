@@ -15,7 +15,7 @@ use aws_sdk_cognitoidentityprovider::{
 };
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, sync::Arc};
-use warp::reject;
+use warp::{filters::BoxedFilter, reject, Filter};
 
 // the token data we send back upon login
 #[derive(Serialize)]
@@ -85,6 +85,10 @@ impl CognitoError {
     pub fn new(cause: String) -> Self {
         CognitoError { cause }
     }
+}
+
+pub fn with_cognito(cognito: Arc<Client>) -> BoxedFilter<(Arc<Client>,)> {
+    warp::any().map(move || cognito.clone()).boxed()
 }
 
 pub async fn get_cognito_client(region: String) -> Client {

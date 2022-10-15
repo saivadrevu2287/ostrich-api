@@ -15,6 +15,7 @@ pub struct Config {
     pub zillow_api: ZillowApiConfig,
     pub email: EmailConfig,
     pub user_service_url: String,
+    pub stripe_api: StripeApiConfig,
 }
 
 impl Config {
@@ -60,6 +61,7 @@ impl Config {
             cognito: CognitoConfig::new(),
             zillow_api: ZillowApiConfig::new(),
             email: EmailConfig::new(),
+            stripe_api: StripeApiConfig::new(),
             user_service_url,
         }
     }
@@ -109,6 +111,24 @@ impl ZillowApiConfig {
         let api_key = env::var("ZILLOW_API_KEY").expect("ZILLOW_API_KEY must be set");
 
         ZillowApiConfig { api_host, api_key }
+    }
+}
+
+#[derive(Clone)]
+pub struct StripeApiConfig {
+    pub webhook_signature_secret: String,
+    pub client_secret: String,
+}
+
+impl StripeApiConfig {
+    pub fn new() -> Self {
+        let webhook_signature_secret =
+            env::var("STRIPE_SIGNATURE_SECRET").expect("STRIPE_SIGNATURE_SECRET must be set");
+        let client_secret = env::var("STRIPE_SECRET").expect("STRIPE_SECRET must be set");
+        StripeApiConfig {
+            webhook_signature_secret,
+            client_secret,
+        }
     }
 }
 

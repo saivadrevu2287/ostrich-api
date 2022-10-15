@@ -17,7 +17,6 @@ use crate::{
     db_conn::DbConn,
     utils::{decode_bearer, JwtPayload},
 };
-use aws_sdk_cognitoidentityprovider::Client as CognitoClient;
 use serde::Serialize;
 use std::error::Error;
 use std::{convert::Infallible, sync::Arc};
@@ -31,10 +30,6 @@ pub type DynResult<T> = std::result::Result<T, Box<dyn std::error::Error + Send 
 
 pub fn with_config(config: Arc<Config>) -> BoxedFilter<(Arc<Config>,)> {
     warp::any().map(move || config.clone()).boxed()
-}
-
-pub fn with_cognito(cognito: Arc<CognitoClient>) -> BoxedFilter<(Arc<CognitoClient>,)> {
-    warp::any().map(move || cognito.clone()).boxed()
 }
 
 pub fn with_db_conn(conn: Arc<DbConn>) -> warp::filters::BoxedFilter<(Arc<DbConn>,)> {

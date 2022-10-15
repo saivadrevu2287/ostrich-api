@@ -1,9 +1,9 @@
 use crate::{
     services::cognito::{
-        ConfirmForgotPasswordCredentials, ConfirmationCredentials, LoginCredentials,
+        with_cognito, ConfirmForgotPasswordCredentials, ConfirmationCredentials, LoginCredentials,
         UsernameCredentials,
     },
-    with_cognito, with_config, Config,
+    with_config, Config,
 };
 use aws_sdk_cognitoidentityprovider::Client;
 use std::sync::Arc;

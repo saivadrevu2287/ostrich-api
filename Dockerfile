@@ -10,7 +10,7 @@ RUN cargo build --release
 
 # Run actual build
 COPY ./src ./src
-RUN cargo build --release --bin emailer_service
+RUN cargo build --release --bin stripe_service
 
 # Run image
 FROM debian:bullseye-slim
@@ -21,8 +21,8 @@ RUN apt-get install -y --no-install-recommends ca-certificates
 
 
 # RUN apt-get update && apt-get install -y extra-runtime-dependencies && rm -rf /var/lib/apt/lists/*
-COPY --from=builder  /usr/src/ostrich-api/target/release/emailer_service /usr/local/bin/emailer-service
+COPY --from=builder  /usr/src/ostrich-api/target/release/stripe_service /usr/local/bin/stripe-service
 
-WORKDIR /usr/emailer-service
+WORKDIR /usr/stripe-service
 COPY ./.env ./.env
-CMD ["emailer-service"]
+CMD ["stripe-service"]

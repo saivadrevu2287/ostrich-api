@@ -1,9 +1,11 @@
 use crate::DynResult;
+use bytes::Bytes;
 use chrono::prelude::*;
 use hmac::{Hmac, Mac};
 use serde::Deserialize;
 use sha2::Sha256;
 use thousands::Separable;
+use warp::Filter;
 
 #[derive(Deserialize)]
 pub struct JwtPayload {
@@ -44,6 +46,19 @@ pub fn format_optional_float(x: Option<f64>) -> String {
 
 pub fn format_optional_string(x: Option<String>) -> String {
     x.map_or(String::from("N/A"), |x| x)
+}
+
+/// Extracts the body of a request as string
+pub fn string_filter(
+    limit: u64,
+) -> impl Filter<Extract = (String,), Error = warp::Rejection> + Clone {
+    warp::body::content_length_limit(limit)
+        .and(warp::filters::body::bytes())
+        .and_then(convert_to_string)
+}
+
+async fn convert_to_string(bytes: Bytes) -> Result<String, warp::Rejection> {
+    String::from_utf8(bytes.to_vec()).map_err(|_| warp::reject())
 }
 
 #[test]
