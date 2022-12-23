@@ -8,7 +8,7 @@ use chrono::naive::NaiveDateTime;
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Queryable, Serialize, Identifiable)]
+#[derive(Queryable, Serialize, Identifiable, Clone)]
 pub struct Emailer {
     pub id: i32,
     pub search_param: String,

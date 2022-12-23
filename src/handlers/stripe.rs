@@ -32,7 +32,7 @@ pub async fn handle_webhook(
             let billing_id = if subscription.status == stripe::SubscriptionStatus::Active {
                 product.name.unwrap()
             } else {
-                String::from("")
+                String::from("Tier 0")
             };
 
             let results = update_user(&conn, customer.email.unwrap(), billing_id);

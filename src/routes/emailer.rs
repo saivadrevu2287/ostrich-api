@@ -4,7 +4,7 @@ use crate::{
         emailer::{PostEmailer, PutEmailer},
         user::User,
     },
-    services::{user::with_user, zillow::ZillowSearchParameters},
+    services::{user::with_token_db_and_user, zillow::ZillowSearchParameters},
     utils::JwtPayload,
     with_config, with_db_conn, with_jwt, with_reqwest_client, DbConn,
 };
@@ -33,7 +33,7 @@ pub fn add_emailer(
         .and(warp::header::<String>("authorization"))
         .and_then(with_jwt)
         .and(with_db_conn(db_conn))
-        .and_then(with_user)
+        .and_then(with_token_db_and_user)
         .untuple_one()
         .and(warp::body::json())
         .boxed()
@@ -48,7 +48,7 @@ pub fn update_emailer(
         .and(warp::header::<String>("authorization"))
         .and_then(with_jwt)
         .and(with_db_conn(db_conn))
-        .and_then(with_user)
+        .and_then(with_token_db_and_user)
         .untuple_one()
         .and(warp::body::json())
         .boxed()
@@ -63,7 +63,7 @@ pub fn get_emailer_by_authentication_id(
         .and(warp::header::<String>("authorization"))
         .and_then(with_jwt)
         .and(with_db_conn(db_conn))
-        .and_then(with_user)
+        .and_then(with_token_db_and_user)
         .untuple_one()
         .boxed()
 }
@@ -76,7 +76,7 @@ pub fn delete_emailer_by_authentication_id(
         .and(warp::header::<String>("authorization"))
         .and_then(with_jwt)
         .and(with_db_conn(db_conn))
-        .and_then(with_user)
+        .and_then(with_token_db_and_user)
         .untuple_one()
         .and(warp::path::param())
         .and(warp::path::end())

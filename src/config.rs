@@ -89,13 +89,19 @@ impl CognitoConfig {
 pub struct EmailConfig {
     pub api_key: String,
     pub from: String,
+    pub admin_email: String,
 }
 
 impl EmailConfig {
     pub fn new() -> Self {
         let api_key = env::var("SENDGRID_API_KEY").expect("SENDGRID_API_KEY must be set");
         let from = env::var("SENDGRID_FROM").expect("SENDGRID_FROM must be set");
-        EmailConfig { api_key, from }
+        let admin_email = String::from("v@ostrich.so");
+        EmailConfig {
+            api_key,
+            from,
+            admin_email,
+        }
     }
 }
 

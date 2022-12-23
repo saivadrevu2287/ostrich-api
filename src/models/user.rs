@@ -57,7 +57,10 @@ pub fn create(conn: &PgConnection, new_user: &NewUser) -> User {
 }
 
 pub fn read(conn: &PgConnection) -> Vec<User> {
-    users::table.load::<User>(conn).expect("Error loading user")
+    users::table
+        .filter(users::active.eq(true))
+        .load::<User>(conn)
+        .expect("Error loading user")
 }
 
 pub fn get_user_by_authentication_id(conn: &PgConnection, authentication_id: String) -> Vec<User> {

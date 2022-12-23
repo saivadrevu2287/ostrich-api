@@ -6,12 +6,17 @@ use crate::{
 };
 use sendgrid_async::{Address, Client, Content, Message, Personalization};
 use std::sync::Arc;
+use warp::{filters::BoxedFilter, Filter};
 
 pub fn get_email_client(config: Arc<Config>) -> Client {
     let api_key = config.email.api_key.clone();
 
     let sg = Client::new(api_key);
     sg
+}
+
+pub fn with_email(email: Arc<Client>) -> BoxedFilter<(Arc<Client>,)> {
+    warp::any().map(move || email.clone()).boxed()
 }
 
 pub async fn send_email(
@@ -81,4 +86,33 @@ pub fn get_ostrich_email_body(emailer: &Emailer) -> String {
         format_optional_float(emailer.min_price),
         format_optional_float(emailer.max_price),
     )
+}
+
+pub async fn email_admin_on_signup(
+    client: &Client,
+    config: Arc<Config>,
+    new_email: String,
+) -> Result<(), OstrichError> {
+    let from = config.email.from.clone();
+    let to = config.email.admin_email.clone();
+    let subject = format!("New Ostrich Signup: {}", new_email);
+    let body = format!("We have a new signup from {}", new_email);
+    send_email(client, &from, &to, &subject, &body).await
+}
+
+pub async fn email_admin_on_tier_change(
+    client: &Client,
+    config: Arc<Config>,
+    new_email: String,
+    tier: String,
+    old_tier: String,
+) -> Result<(), OstrichError> {
+    let from = config.email.from.clone();
+    let to = config.email.admin_email.clone();
+    let subject = format!("New Ostrich Subscrption: {}", new_email);
+    let body = format!(
+        "We have a new subscription change by {} from {} to tier {}",
+        new_email, old_tier, tier
+    );
+    send_email(client, &from, &to, &subject, &body).await
 }

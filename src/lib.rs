@@ -76,7 +76,7 @@ pub async fn handle_rejection(err: Rejection) -> Result<impl Reply, Infallible> 
     if err.is_not_found() {
         code = StatusCode::NOT_FOUND;
         message = String::from("NOT_FOUND");
-    } else if let Some(e) = err.find::<services::cognito::CognitoError>() {
+    } else if let Some(e) = err.find::<handlers::auth::CognitoError>() {
         code = StatusCode::BAD_REQUEST;
         message = e.cause.clone();
     } else if let Some(e) = err.find::<error::OstrichError>() {

@@ -1,5 +1,5 @@
 use env_logger::Env;
-use ostrich_api::{config::Config, db_conn::DbConn, handle_rejection, handlers, routes};
+use ostrich_api::{config::Config, db_conn::DbConn, handle_rejection, handlers, routes, services};
 use std::{net::SocketAddr, sync::Arc};
 use warp::Filter;
 
@@ -11,6 +11,7 @@ async fn main() {
     let config = Arc::new(Config::new(false));
     let db_conn = Arc::new(DbConn::new(&config.db_path));
     let reqwest_client = Arc::new(reqwest::Client::new());
+    let email_client = Arc::new(services::email::get_email_client(config.clone()));
 
     let with_control_origin = warp::reply::with::header("Access-Control-Allow-Origin", "*");
     let with_content_allow =
@@ -37,8 +38,12 @@ async fn main() {
     let update_emailer = routes::emailer::update_emailer(db_conn.clone())
         .and_then(handlers::emailer::update_emailer);
 
-    let user = routes::user::get_user_by_authentication_id(db_conn.clone())
-        .and_then(handlers::user::get_user_by_authentication_id);
+    let user = routes::user::get_user_by_authentication_id(
+        config.clone(),
+        email_client.clone(),
+        db_conn.clone(),
+    )
+    .and_then(handlers::user::get_user);
 
     let emailer = get_all_emailers
         .or(post_emailer)
