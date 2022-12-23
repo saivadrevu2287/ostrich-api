@@ -1,15 +1,80 @@
 use crate::{
     handle_succcess_message,
-    services::cognito::{
-        self as cognito_service, reject_with_cognito_error, AuthenticationDetails, CognitoError,
-        ConfirmForgotPasswordCredentials, ConfirmationCredentials, LoginCredentials,
-        UsernameCredentials,
+    services::{
+        self,
+        cognito::{self as cognito_service},
     },
     Config,
 };
 use aws_sdk_cognitoidentityprovider::types::SdkError;
 use aws_sdk_cognitoidentityprovider::Client as CognitoClient;
+use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+use warp::reject;
+
+// the token data we send back upon login
+#[derive(Serialize)]
+pub struct AuthenticationDetails {
+    pub access_token: Option<String>,
+    pub expires_in: i32,
+    pub token_type: Option<String>,
+    pub refresh_token: Option<String>,
+    pub id_token: Option<String>,
+}
+
+// post body when logging in
+#[derive(Deserialize)]
+pub struct LoginCredentials {
+    pub username: String,
+    pub password: String,
+}
+
+// post body when confirming your email
+#[derive(Deserialize)]
+pub struct ConfirmationCredentials {
+    pub username: String,
+    pub code: String,
+}
+
+// post body when running forgot password
+#[derive(Deserialize, Serialize)]
+pub struct UsernameCredentials {
+    pub username: String,
+}
+
+// post body when confirming your forgotten password
+#[derive(Deserialize, Serialize)]
+pub struct ConfirmForgotPasswordCredentials {
+    pub username: String,
+    pub password: String,
+    pub code: String,
+}
+
+// post body when refreshing the tokens
+#[derive(Deserialize, Serialize)]
+pub struct RefreshCredentials {
+    pub username: String,
+    pub refresh_token: String,
+}
+
+// error type that we send back to user
+#[derive(Debug)]
+pub struct CognitoError {
+    pub cause: String,
+}
+
+impl reject::Reject for CognitoError {}
+
+// wrapper to send back cognito errors to our user
+pub fn reject_with_cognito_error(message: &str) -> warp::Rejection {
+    reject::custom(CognitoError::new(String::from(message)))
+}
+
+impl CognitoError {
+    pub fn new(cause: String) -> Self {
+        CognitoError { cause }
+    }
+}
 
 pub async fn login(
     login_credentials: LoginCredentials,
@@ -149,6 +214,32 @@ pub async fn confirm_forgot_password(
     resend_results
         .map_err(handle_cognito_error)
         .map(|_| Ok(handle_succcess_message(format!("PASSWORD_RESET"))))
+}
+
+pub async fn refresh(
+    refresh_credentials: RefreshCredentials,
+    config: Arc<Config>,
+    cognito: Arc<CognitoClient>,
+) -> Result<impl warp::Reply, warp::Rejection> {
+    log::info!("Login from {}", refresh_credentials.username);
+    let login_results = cognito_service::refresh(
+        cognito,
+        format!("{}", config.cognito.client_id),
+        format!("{}", config.cognito.secret_key),
+        refresh_credentials.username,
+        refresh_credentials.refresh_token,
+    )
+    .await;
+
+    match login_results {
+        Err(error) => Err(handle_cognito_error(error)),
+        Ok(login_result) => match login_result.authentication_result {
+            Some(authentication_result) => Ok(warp::reply::json(&AuthenticationDetails::from(
+                authentication_result,
+            ))),
+            None => Err(reject_with_cognito_error("No Authentication Results")),
+        },
+    }
 }
 
 // this will either make a new error out of a cognito message

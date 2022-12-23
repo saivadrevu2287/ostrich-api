@@ -32,12 +32,16 @@ async fn main() {
         routes::auth::confirm_forgot_password(config.clone(), cognito.clone())
             .and_then(handlers::auth::confirm_forgot_password);
 
+    let refresh = routes::auth::refresh_token(config.clone(), cognito.clone())
+        .and_then(handlers::auth::refresh);
+
     let auth = login
         .or(sign_up)
         .or(verify)
         .or(resend_code)
         .or(forgot_password)
         .or(confirm_forgot_password)
+        .or(refresh)
         .recover(handle_rejection);
 
     let with_control_origin = warp::reply::with::header("Access-Control-Allow-Origin", "*");

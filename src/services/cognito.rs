@@ -1,4 +1,4 @@
-use crate::utils::base64_hmac;
+use crate::{handlers::auth::AuthenticationDetails, utils::base64_hmac};
 use aws_config::meta::region::RegionProviderChain;
 use aws_sdk_cognitoidentityprovider::{
     error::{
@@ -13,19 +13,8 @@ use aws_sdk_cognitoidentityprovider::{
     types::SdkError,
     Client, Region,
 };
-use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, sync::Arc};
-use warp::{filters::BoxedFilter, reject, Filter};
-
-// the token data we send back upon login
-#[derive(Serialize)]
-pub struct AuthenticationDetails {
-    pub access_token: Option<String>,
-    pub expires_in: i32,
-    pub token_type: Option<String>,
-    pub refresh_token: Option<String>,
-    pub id_token: Option<String>,
-}
+use warp::{filters::BoxedFilter, Filter};
 
 // convert the aws type to our type
 impl From<AuthenticationResultType> for AuthenticationDetails {
@@ -37,53 +26,6 @@ impl From<AuthenticationResultType> for AuthenticationDetails {
             refresh_token: a.refresh_token,
             id_token: a.id_token,
         }
-    }
-}
-
-// post body when logging in
-#[derive(Deserialize)]
-pub struct LoginCredentials {
-    pub username: String,
-    pub password: String,
-}
-
-// post body when confirming your email
-#[derive(Deserialize)]
-pub struct ConfirmationCredentials {
-    pub username: String,
-    pub code: String,
-}
-
-// post body when running forgot password
-#[derive(Deserialize, Serialize)]
-pub struct UsernameCredentials {
-    pub username: String,
-}
-
-// post body when confirming your forgotten password
-#[derive(Deserialize, Serialize)]
-pub struct ConfirmForgotPasswordCredentials {
-    pub username: String,
-    pub password: String,
-    pub code: String,
-}
-
-// error type that we send back to user
-#[derive(Debug)]
-pub struct CognitoError {
-    pub cause: String,
-}
-
-impl reject::Reject for CognitoError {}
-
-// wrapper to send back cognito errors to our user
-pub fn reject_with_cognito_error(message: &str) -> warp::Rejection {
-    reject::custom(CognitoError::new(String::from(message)))
-}
-
-impl CognitoError {
-    pub fn new(cause: String) -> Self {
-        CognitoError { cause }
     }
 }
 
@@ -240,4 +182,30 @@ pub async fn confirm_forgot_password(
         .await;
 
     confirm_forgot_password
+}
+
+pub async fn refresh(
+    client: Arc<Client>,
+    client_id: String,
+    secret_key: String,
+    username: String,
+    refresh_token: String,
+) -> Result<InitiateAuthOutput, SdkError<InitiateAuthError>> {
+    let message = format!("{}{}", username, client_id);
+    let secret_hash = base64_hmac(secret_key, message).expect("Could not accept secret key");
+
+    let user_credentials = HashMap::from([
+        ("REFRESH_TOKEN".to_string(), refresh_token),
+        ("SECRET_HASH".to_string(), secret_hash),
+    ]);
+
+    let auth = client
+        .initiate_auth()
+        .auth_flow(AuthFlowType::RefreshTokenAuth)
+        .client_id(client_id)
+        .set_auth_parameters(Some(user_credentials.clone()))
+        .send()
+        .await;
+
+    auth
 }

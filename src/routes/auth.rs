@@ -1,8 +1,9 @@
 use crate::{
-    services::cognito::{
-        with_cognito, ConfirmForgotPasswordCredentials, ConfirmationCredentials, LoginCredentials,
-        UsernameCredentials,
+    handlers::auth::{
+        ConfirmForgotPasswordCredentials, ConfirmationCredentials, LoginCredentials,
+        RefreshCredentials, UsernameCredentials,
     },
+    services::cognito::with_cognito,
     with_config, Config,
 };
 use aws_sdk_cognitoidentityprovider::Client;
@@ -75,6 +76,18 @@ pub fn confirm_forgot_password(
 ) -> BoxedFilter<(ConfirmForgotPasswordCredentials, Arc<Config>, Arc<Client>)> {
     warp::post()
         .and(warp::path("confirm-forgot-password"))
+        .and(warp::body::json())
+        .and(with_config(config))
+        .and(with_cognito(cognito))
+        .boxed()
+}
+
+pub fn refresh_token(
+    config: Arc<Config>,
+    cognito: Arc<Client>,
+) -> BoxedFilter<(RefreshCredentials, Arc<Config>, Arc<Client>)> {
+    warp::post()
+        .and(warp::path("refresh"))
         .and(warp::body::json())
         .and(with_config(config))
         .and(with_cognito(cognito))
