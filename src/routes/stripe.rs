@@ -1,4 +1,8 @@
-use crate::{services::stripe, utils::string_filter, with_config, with_db_conn, Config, DbConn};
+use crate::{
+    services::{email, stripe},
+    utils::string_filter,
+    with_config, with_db_conn, Config, DbConn,
+};
 use ::stripe::{Client, WebhookEvent};
 use std::sync::Arc;
 use warp::{filters::BoxedFilter, Filter};
@@ -11,7 +15,14 @@ pub fn webhook(
     config: Arc<Config>,
     db_conn: Arc<DbConn>,
     client: Arc<Client>,
-) -> BoxedFilter<(Arc<Config>, WebhookEvent, Arc<Client>, Arc<DbConn>)> {
+    email_client: Arc<sendgrid_async::Client>,
+) -> BoxedFilter<(
+    Arc<Config>,
+    WebhookEvent,
+    Arc<Client>,
+    Arc<DbConn>,
+    Arc<sendgrid_async::Client>,
+)> {
     warp::post()
         .and(path_prefix())
         .and(warp::path::end())
@@ -22,5 +33,6 @@ pub fn webhook(
         .untuple_one()
         .and(stripe::with_client(client))
         .and(with_db_conn(db_conn))
+        .and(email::with_email(email_client))
         .boxed()
 }

@@ -11,11 +11,17 @@ async fn main() {
     let config = Arc::new(Config::new(false));
     let db_conn = Arc::new(DbConn::new(&config.db_path));
     let stripe_client = Arc::new(services::stripe::get_stripe_client(config.clone()));
+    let email_client = Arc::new(services::email::get_email_client(config.clone()));
 
     let health = warp::get().and(warp::path("health")).map(|| warp::reply());
 
-    let webhook = routes::stripe::webhook(config.clone(), db_conn.clone(), stripe_client.clone())
-        .and_then(handlers::stripe::handle_webhook);
+    let webhook = routes::stripe::webhook(
+        config.clone(),
+        db_conn.clone(),
+        stripe_client.clone(),
+        email_client.clone(),
+    )
+    .and_then(handlers::stripe::handle_webhook);
 
     let end = health
         .or(webhook)
